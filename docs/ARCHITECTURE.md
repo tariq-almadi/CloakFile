@@ -322,18 +322,43 @@ invalid JSON. Structure-aware handling (per-cell CSV, per-value JSON via JSON
 pointers) is Phase 2; today CSV and JSON are treated as text, which means keys
 are also scanned.
 
-### Not implemented: PDF, DOCX
+### Implemented: PDF — by rebuilding, not by editing
 
-Both are **registered** with full capability declarations and detailed design
-notes, and both throw `NotImplementedError`. Registering them is deliberate:
-an unsupported upload gets a specific, actionable error, and the capabilities
+PDF is the one format where the obvious approach is the wrong one. Two facts,
+both measured against real files rather than assumed, decided the design:
+
+1. **Find-and-replace inside a PDF is not possible in general.** With a subset
+   font — what every modern producer emits — the operands in the content stream
+   are glyph IDs, not characters. `John Doe` can appear as
+   `<0001000200030004>`, where the mapping to letters lives in a separate
+   `ToUnicode` CMap. There is nothing to search for, and no way to write a
+   placeholder in a font that contains no glyph for `[`.
+2. **A PDF has more places to hide a value than a page.** Annotations, form
+   fields, `/Info`, XMP, embedded files, outlines, JavaScript actions,
+   invisible OCR text (`3 Tr`), and objects left unreferenced by an incremental
+   update all survive naive processing.
+
+So CloakFile does not edit the uploaded PDF. It **extracts text from every
+channel above, sanitizes that text, and authors a new document** containing
+only the sanitized text. Nothing is carried across — not fonts, not images, not
+metadata, not attachments. A channel that is never copied cannot leak.
+
+The cost is stated plainly rather than hidden: `preservesLayout: false`. The
+output is readable, paginated text, not a visual facsimile. That trade is the
+whole decision, and it is recorded in ADR 0003.
+
+`pdfjs-dist` reads (a battle-tested parser, configured defensively in a single
+`pdfjs-loader.ts`), `@cantoo/pdf-lib` writes. Scanned pages have no text to
+extract, so they are reported in `ExtractedDocument.unreadable`, which forces
+verification to `inconclusive` — the pipeline will not call a document it could
+not read "sanitized".
+
+### Not implemented: DOCX
+
+DOCX is **registered** with a full capability declaration and detailed design
+notes, and throws `NotImplementedError`. Registering it is deliberate: an
+unsupported upload gets a specific, actionable error, and the capabilities
 endpoint can describe the intended behaviour of a format that does not work yet.
-
-`packages/document-processing/src/formats/pdf/pdf-extractor.ts` contains the
-full inventory of channels through which a value can survive a naive PDF
-implementation — content streams, form fields, annotations, XMP metadata,
-embedded files, invisible OCR layers, incremental update history. Read it before
-starting that work.
 
 The DOCX container guard (`security/zip-guard.ts`) **is** implemented and runs
 today, even though extraction does not. Rejecting a decompression bomb is
@@ -368,7 +393,25 @@ one.
 
 **Three outcomes, not two.** `inconclusive` means we could not read the output
 back. Under strict verification (the default) the pipeline refuses to release
-the file, and the UI presents it as a warning rather than success.
+the file, and the UI presents it as a warning rather than success. A PDF with
+a scanned page lands here: no text came out of it, so finding nothing in the
+output proves nothing about it.
+
+**For PDFs it does not trust the extractor that produced the text.** Text
+extraction answers "what would a reader see", which is the wrong question for
+a leak. Two extra checks use a different parser (`@cantoo/pdf-lib`) over the
+same bytes:
+
+- **`deep-streams`** walks every indirect object, inflates every stream, and
+  decodes every string as UTF-8, Latin-1 and UTF-16BE before searching. A raw
+  byte search would find nothing, because PDF objects are Flate-compressed —
+  and "I grepped the file and it wasn't there" is exactly the false assurance
+  this product exists to avoid. There is a test that asserts precisely this:
+  a value invisible to a byte search, found by the sweep.
+- **`structural-channels`** asserts the output carries no annotations, no
+  AcroForm, no embedded files, no XMP, no JavaScript, no outlines and no
+  descriptive `/Info` entries — the channels the generator is supposed to have
+  dropped, confirmed by something other than the generator.
 
 **It reports placeholders, never residual values**, so a verification report is
 safe to return to the client and safe to write to a log.
@@ -465,7 +508,10 @@ that needs a decision, including the preview policy.
 2. Implement `DocumentExtractor` and `DocumentGenerator`, declaring honest
    `FormatCapabilities`.
 3. Add a `DocumentTransformer` if flat-text offsets need mapping onto document
-   structure (PDF and DOCX will).
+   structure. PDF does not use one: offsets are invalidated the moment a
+   placeholder changes a string's length, so it joins its blocks with a form
+   feed (`\f`) and splits the sanitized text back on that separator instead.
+   DOCX will need the same trick or a real transformer.
 4. Register both in `createDefaultDocumentRegistry()`.
 5. Teach `detectFormat` the signature.
 6. Add the format to the round-trip test in

@@ -1,11 +1,11 @@
 # Threat Model
 
-> Scope: the Phase 1 system — a React client, a Fastify API, and an in-memory
-> ephemeral pipeline handling TXT, CSV and JSON. No authentication, no
-> persistence, single instance.
+> Scope: a React client, a Fastify API, and an in-memory ephemeral pipeline
+> handling TXT, CSV, JSON and PDF. No authentication, no persistence, single
+> instance.
 >
-> This model is written to be revisited. PDF and DOCX support in particular will
-> change several entries substantially.
+> This model is written to be revisited. PDF support changed T-03 and T-14
+> substantially; DOCX support will change T-04 and T-13 the same way.
 
 ---
 
@@ -117,12 +117,25 @@ code execution in a parser.
 - Non-Word ZIP archives rejected outright.
 - Size limits at the parser, the application and the extraction layer.
 - Uploads are never executed and never written to disk.
-- Phase 1 parsers are `TextDecoder` and `JSON.parse` — a very small attack
+- Text parsers are `TextDecoder` and `JSON.parse` — a very small attack
   surface, both memory-safe.
+- **PDF loading is funnelled through one hardened entry point**
+  (`pdfjs-loader.ts`). Every network-shaped option is off (`useWorkerFetch`,
+  range and streaming fetches, system fonts), scripting and XFA are off, WASM
+  and the image decoders are off, `maxImageSize` is capped, and extraction runs
+  under a time budget with page and object-count limits. Defaults are verified
+  against the shipped bundle, never inherited — `maxImageSize` defaults to
+  unbounded, which is exactly the kind of default this rule exists to catch.
+- **Image decoding is avoided entirely.** Image-only pages are found by
+  inspecting the PDF's object structure rather than by building an operator
+  list, so a hostile JBIG2 or JPX payload is never handed to a decoder.
 
-**Residual risk: Low today, High once PDF and DOCX land.** Document parsers are
-historically a rich source of memory-safety bugs. When those formats are added,
-consider running extraction in a separate process with a memory cap.
+**Residual risk: Medium.** `pdfjs-dist` is a large, pure-JavaScript parser, so
+memory-safety bugs are unlikely but denial of service through pathological
+structure is not. The version floor is a security boundary: v6 removed the
+eval-based font compilation behind CVE-2024-4367 outright. Before production,
+run extraction in a separate process with a memory cap. Rises to **High** when
+DOCX lands.
 
 ---
 
@@ -291,19 +304,45 @@ not assumed from a library default.
 **Threat.** A PDF is reported as sanitized while a value survives through a
 channel the implementation did not cover.
 
-**Status: mitigated by not being implemented.** PDF uploads fail with
-`NOT_IMPLEMENTED`.
+**Primary mitigation: the output PDF is authored from scratch.** The uploaded
+file is read, never edited. Text is extracted from every channel below,
+sanitized, and written into a new document that inherits nothing — no fonts, no
+images, no metadata, no attachments, no object history. A channel that is never
+copied forward cannot leak, which turns "did we cover every hiding place?" into
+"did we extract from every hiding place?". The second question is answerable;
+the first is not.
 
-**Known channels**, documented in full in `pdf-extractor.ts`: content-stream
-text, positioned glyph runs with custom encodings, form field values and their
-appearance streams, annotations, `/Info` and XMP metadata, embedded files,
-invisible OCR text layers (`Tr 3`), raster images containing the value as
-pixels, and prior revisions retained by incremental updates.
+**Known channels**, all extracted and all dropped from the output:
+content-stream text, form field values, annotations (including their contents
+and appearance text), `/Info` and XMP metadata, embedded files, outlines,
+JavaScript actions, XFA, invisible OCR text layers (`3 Tr`), and prior
+revisions retained by incremental updates. Where a channel is present in the
+input, the user is told it was removed rather than sanitized.
 
-**The limit that will remain:** a value present only as pixels is invisible to
-text extraction. Such documents must be reported `inconclusive`, never
-sanitized. Drawing a rectangle over text is `visual-redaction` and is not
-acceptable — the text operator underneath is untouched and remains extractable.
+**Secondary mitigation: verification does not trust the extractor.** The
+`deep-streams` check inflates every stream in the output and decodes every
+string in three encodings before searching; `structural-channels` confirms via
+a second parser that no annotation, form, attachment, XMP packet, script,
+outline or descriptive `/Info` entry survived. Both are described in
+ARCHITECTURE §8.
+
+**The limits that remain, and they are real:**
+
+- A value present only as **pixels** is invisible to text extraction. Such
+  pages are recorded in `ExtractedDocument.unreadable` and force an
+  `inconclusive` result; the pipeline refuses to release the file under strict
+  verification. There is no OCR, deliberately — OCR would produce a confident
+  answer of unknown accuracy, which is worse than an honest refusal.
+- **Layout is not preserved.** The output is paginated text, not a facsimile.
+- **Non-Latin scripts degrade.** The output uses the standard Helvetica, so
+  characters outside WinAnsi are written as `?` and the substitution is
+  counted and reported.
+- **Signatures are destroyed**, necessarily: a rebuilt document is a different
+  document.
+
+Drawing a rectangle over text remains unacceptable and unimplemented. The text
+operator underneath is untouched and stays extractable; a covered value is a
+present value.
 
 ---
 
@@ -340,20 +379,20 @@ normalised through a character allowlist because it reaches a
 | ---- | ------------------------------- | -------------------------------------------------------- |
 | T-02 | Incomplete sanitization         | **Medium–High** (inherent — bounded by detection recall) |
 | T-11 | Transport interception          | **High if deployed without TLS**                         |
-| T-03 | Parser exploitation             | Low now, **High** once PDF/DOCX land                     |
+| T-03 | Parser exploitation             | Medium (PDF), rising to **High** once DOCX lands         |
 | T-04 | Decompression bomb              | Medium                                                   |
 | T-05 | Memory exposure                 | Medium                                                   |
 | T-07 | ReDoS                           | Medium                                                   |
 | T-08 | Resource exhaustion             | Medium                                                   |
 | T-09 | Cross-user access               | Medium (no authentication)                               |
 | T-10 | Dependency compromise           | Medium                                                   |
+| T-14 | PDF limitations                 | Medium (no layout preservation; scanned pages refused)   |
 | T-01 | Client data exposure            | Low                                                      |
 | T-06 | Sensitive logging               | Low–Medium                                               |
 | T-12 | CSRF                            | Low (conditional on staying cookie-free)                 |
 | T-15 | Prototype pollution / injection | Low                                                      |
 | T-16 | Path traversal                  | Low                                                      |
 | T-13 | XXE                             | N/A until DOCX                                           |
-| T-14 | PDF limitations                 | N/A until PDF                                            |
 
 ## Before production
 
@@ -363,5 +402,11 @@ normalised through a character allowlist because it reaches a
 4. Configure runtime egress control (T-10).
 5. Disable core dumps, configure memory limits and swap (T-05).
 6. Adversarially test detection recall with realistic documents (T-02).
-7. Commission an independent security review, especially of PDF/DOCX once
-   written (T-03, T-13, T-14).
+7. Run PDF extraction in a separate process with a memory cap and a hard kill,
+   so a pathological document degrades one request rather than the service
+   (T-03, T-08).
+8. Test PDF handling against a corpus of real-world and adversarial files. The
+   fixtures in this repository are ones we wrote, which means they exercise the
+   failure modes we already thought of (T-03, T-14).
+9. Commission an independent security review, especially of PDF, and of DOCX
+   once written (T-03, T-13, T-14).

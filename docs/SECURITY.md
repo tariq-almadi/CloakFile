@@ -67,6 +67,7 @@ replacement characters, which we would then scan, rewrite and hand back as a
 | Multipart parser | `fileSize`, `files: 1`, `fields: 10`, `fieldSize`, `headerPairs` |
 | Application      | `validateUpload` re-checks the byte length                       |
 | Extraction       | `MAX_EXTRACTED_TEXT_LENGTH` (5 M characters)                     |
+| PDF              | 500 pages, 100 000 indirect objects, 30 s budget, 16 MiB images |
 | JSON bodies      | Fastify `bodyLimit` of 1 MiB                                     |
 
 The parser limit is the real defence — it stops the stream before a buffer is
@@ -84,6 +85,40 @@ so whoever implements DOCX extraction cannot forget it.
 Declared sizes are attacker-controlled and may lie. This is a cheap pre-filter,
 **not** a guarantee. A real DOCX extractor must additionally cap bytes actually
 read out of the stream.
+
+### Hostile PDFs
+
+A PDF is a small programming environment with a document attached, so it gets
+its own rules.
+
+**One loader, no defaults.** Every `pdfjs-dist` load goes through
+`formats/pdf/pdfjs-loader.ts`. Nothing is left to a library default, because
+the defaults were checked against the shipped bundle and one of them —
+`maxImageSize: -1`, meaning unbounded — is exactly the kind of thing that only
+shows up under a file designed to find it. The loader turns off every
+network-shaped option (worker fetch, range requests, streaming, system fonts),
+scripting, XFA, WASM, image decoders and font-face registration, caps image
+size, and resolves standard fonts, CMaps, ICC profiles and WASM binaries from
+the local package rather than a URL. A PDF cannot make the server fetch
+anything.
+
+`pdfjs-dist` is floored at v6 for a security reason, not a feature one: v6
+removed the eval-based font and CMap compilation behind CVE-2024-4367
+outright. The option that used to disable it no longer exists.
+
+**Image decoders are never run.** Image-only pages are identified by walking
+the PDF's object structure with `@cantoo/pdf-lib`, not by building an operator
+list. Building an operator list would hand a crafted JBIG2 or JPX payload to a
+decoder in order to learn something we can learn from a dictionary lookup.
+
+**The output is authored, not edited.** The uploaded file is never modified and
+never copied forward. See ARCHITECTURE §7 for why this is the only approach
+that can make an honest claim, and THREAT-MODEL T-14 for what it costs.
+
+**Parse failures do not quote the bytes.** Every error from the PDF layer is
+translated into a `MalformedDocumentError` or `SuspiciousDocumentError` with
+the library's message dropped. Parser messages routinely contain fragments of
+the document, and an error response is not a safe place for those.
 
 ### Uploaded files are never executed, and never written to disk
 
@@ -247,11 +282,27 @@ Two properties matter for security:
 - **`visual-redaction` output is rejected outright.** A generator that covers
   text rather than removing it produces a document this system will not release.
 
+- **For PDFs, the checks do not share a parser with the generator.** Asking the
+  component that wrote a file whether it wrote the file correctly is not
+  verification. `deep-streams` inflates every stream and decodes every string
+  in three encodings; `structural-channels` confirms no annotation, form,
+  attachment, XMP packet, script, outline or descriptive `/Info` entry
+  survived. Both read the output bytes with `@cantoo/pdf-lib`, a different
+  parser from the `pdfjs-dist` one used for extraction.
+
+**A raw byte search is not verification.** PDF objects are Flate-compressed, so
+searching the file for a sensitive string finds nothing whether or not the
+string is there. This is a genuinely dangerous false assurance, and there is a
+test asserting the distinction: a value that a byte search cannot see, found by
+the structural sweep.
+
 **What verification does not prove:** it proves the values are absent from the
-text we can _extract_. For TXT, CSV and JSON, extraction is exhaustive, so that
-is equivalent to absence from the file. For PDF and DOCX it will not be — text
-can hide in metadata, annotations, tracked changes and image pixels — which is
-one of the reasons those formats are not enabled.
+content we can _read back_. For TXT, CSV and JSON, extraction is exhaustive, so
+that is equivalent to absence from the file. For PDF it is close to exhaustive
+for anything expressible as text or as a stream, but a value rendered as
+**pixels** is not reachable — which is why pages with no extractable text are
+reported as `unreadable` and force an `inconclusive` result rather than a pass.
+DOCX is not enabled at all.
 
 ---
 
@@ -281,7 +332,8 @@ This list is the honest answer to "is this safe to use yet?".
 
 | Area                          | Why it needs review                                                                                                      |
 | ----------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
-| **PDF and DOCX handling**     | Not written. The highest-risk part of the product                                                                        |
+| **PDF handling**              | New, and the highest-risk part of the product. Tested against fixtures we wrote, not against a real-world corpus. Extraction should run in a separate process with a memory cap |
+| **DOCX handling**             | Not written                                                                                                              |
 | **ReDoS on custom patterns**  | Heuristic only; needs worker-thread isolation with a timeout                                                             |
 | **In-memory erasure**         | Best-effort; needs a deployment-level answer (core dumps, swap, memory limits)                                           |
 | **No authentication**         | Anyone who can reach the API can submit a document and consume capacity                                                  |

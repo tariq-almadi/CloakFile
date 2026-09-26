@@ -53,7 +53,16 @@ export interface TextSegment {
 }
 
 export type TextRegion =
-  'body' | 'header' | 'footer' | 'footnote' | 'table' | 'metadata' | 'annotation' | 'embedded';
+  | 'body'
+  | 'header'
+  | 'footer'
+  | 'footnote'
+  | 'table'
+  | 'metadata'
+  | 'annotation'
+  /** PDF AcroForm field values and their appearance streams; DOCX content controls. */
+  | 'form-field'
+  | 'embedded';
 
 /** Non-sensitive description of the uploaded file. */
 export interface DocumentSource {
@@ -75,6 +84,19 @@ export interface ExtractedDocument {
   readonly text: string;
   readonly segments: readonly TextSegment[];
   readonly capabilities: FormatCapabilities;
+  /**
+   * Locators of content the extractor knows it could not read — most often a
+   * scanned page, where the text exists only as pixels.
+   *
+   * This is separate from `warnings` because it changes the outcome rather than
+   * merely informing: what we cannot read, we cannot search, so we cannot claim
+   * to have cleaned it. A non-empty list forces verification to `inconclusive`,
+   * and under strict mode the document is never released.
+   *
+   * Free-form warnings are for humans; this list is for the verifier, and
+   * matching on warning strings to recover it would be fragile.
+   */
+  readonly unreadable: readonly string[];
   /**
    * Extraction concerns the caller should know about, e.g. "this PDF has 3
    * pages with no extractable text". Free-form but never contains document text.

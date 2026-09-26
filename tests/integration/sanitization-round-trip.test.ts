@@ -2,6 +2,8 @@ import { SanitizationPipeline } from '@cloakfile/pipeline';
 import type { AnalyzeOptions } from '@cloakfile/shared';
 import { describe, expect, it } from 'vitest';
 
+import { createDefaultDocumentRegistry } from '@cloakfile/document-processing';
+
 import {
   SAMPLE_CSV,
   SAMPLE_JSON,
@@ -9,6 +11,12 @@ import {
   SAMPLE_TEXT_SECRETS,
   toBytes,
 } from '../fixtures/index.js';
+import {
+  HOSTILE_PDF_SECRETS,
+  hostilePdf,
+  multiPagePdf,
+  simpleTextPdf,
+} from '../fixtures/pdf.js';
 
 /**
  * The end-to-end property the whole product rests on:
@@ -41,6 +49,33 @@ async function sanitize(text: string, format: 'txt' | 'csv' | 'json', options = 
     result,
     outputText: new TextDecoder().decode(result.generated.bytes),
   };
+}
+
+const PDF_ENABLED: AnalyzeOptions = {
+  ...ALL_ENABLED,
+  // Without a region, a national-format number is ambiguous and correctly goes
+  // undetected. The fixtures use Canadian numbers.
+  defaultRegion: 'CA',
+};
+
+/**
+ * Note that `outputText` here comes from re-extracting the generated PDF, not
+ * from decoding its bytes. Decoding would be meaningless: PDF objects are
+ * compressed, so a value can be absent from the bytes and fully present in the
+ * document.
+ */
+async function sanitizePdf(bytes: Uint8Array, options = PDF_ENABLED) {
+  const pipeline = new SanitizationPipeline();
+
+  const analysis = await pipeline.analyze({ bytes, format: 'pdf', options });
+  const result = await pipeline.sanitize({ originalBytes: bytes, analysis });
+
+  const reExtracted = await createDefaultDocumentRegistry().extract({
+    bytes: result.generated.bytes,
+    format: 'pdf',
+  });
+
+  return { analysis, result, outputText: reExtracted.text };
 }
 
 describe('sanitization round trip', () => {
@@ -137,5 +172,67 @@ describe('sanitization round trip', () => {
     });
 
     expect(analysis.warnings.join(' ')).toContain('no detector is implemented');
+  });
+});
+
+/**
+ * The same guarantee, for PDF.
+ *
+ * These belong here rather than in a PDF-only file because the property is
+ * format-independent: whatever the format, the original must not survive into
+ * the bytes we hand back. Only the way of reading those bytes differs — for a
+ * PDF, "read the output" means parsing it, never searching it, since its
+ * objects are compressed.
+ */
+describe('sanitization round trip · pdf', () => {
+  it('removes every detected value from the generated PDF', async () => {
+    const { result, outputText } = await sanitizePdf(await simpleTextPdf());
+
+    expect(outputText).not.toContain('John Doe');
+    expect(outputText).not.toContain('514-555-0132');
+    expect(outputText).not.toContain('4111');
+    expect(outputText).not.toContain('john.doe@example.com');
+    expect(result.verification.status).toBe('pass');
+  });
+
+  it('replaces text rather than covering it', async () => {
+    const { outputText } = await sanitizePdf(await simpleTextPdf());
+
+    // The user's own example, end to end.
+    expect(outputText).toContain("[PERSON_001]'s phone number is [PHONE_001].");
+  });
+
+  it('is deterministic: the same PDF yields byte-identical output', async () => {
+    const input = await simpleTextPdf();
+    const first = await sanitizePdf(input);
+    const second = await sanitizePdf(input);
+
+    expect(Buffer.from(second.result.generated.bytes)).toEqual(
+      Buffer.from(first.result.generated.bytes),
+    );
+  });
+
+  it('maps a repeated value onto a single placeholder across pages', async () => {
+    const { analysis, outputText } = await sanitizePdf(await multiPagePdf(3));
+
+    const emailGroups = analysis.groups.filter((group) => group.type === 'EMAIL');
+    expect(emailGroups).toHaveLength(1);
+    expect(emailGroups[0]?.occurrences).toBe(3);
+    expect(outputText.split('[EMAIL_001]').length - 1).toBe(3);
+  });
+
+  it('never exposes an original value in the client-facing groups', async () => {
+    const { analysis } = await sanitizePdf(hostilePdf());
+    const serialised = JSON.stringify(analysis.groups);
+
+    for (const secret of HOSTILE_PDF_SECRETS) {
+      expect(serialised).not.toContain(secret);
+    }
+  });
+
+  it('declares content-removal, not visual redaction', async () => {
+    const { result } = await sanitizePdf(await simpleTextPdf());
+
+    expect(result.generated.mode).toBe('content-removal');
   });
 });

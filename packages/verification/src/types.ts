@@ -15,6 +15,16 @@ export interface VerificationInput {
    * survive, so finding them is not a failure.
    */
   readonly skipped: readonly AnonymizedDetection[];
+  /**
+   * Locators from the *source* document that could not be read — carried
+   * through from `ExtractedDocument.unreadable`.
+   *
+   * The verifier needs this because the evidence it works from is text. A
+   * scanned page yields no text, so searching the output proves nothing about
+   * it. Without this the check would pass for the most dangerous possible
+   * document: one whose sensitive content was never visible to us at all.
+   */
+  readonly unreadable: readonly string[];
 }
 
 /**

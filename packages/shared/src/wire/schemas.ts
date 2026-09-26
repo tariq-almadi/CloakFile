@@ -96,7 +96,15 @@ export const sanitizeRequestSchema = z.object({
 });
 
 export const verificationCheckSchema = z.object({
-  id: z.enum(['residual-values', 'placeholders-present', 'output-parses', 'metadata-clean']),
+  id: z.enum([
+    'residual-values',
+    'placeholders-present',
+    'output-parses',
+    'metadata-clean',
+    'structural-channels',
+    'deep-streams',
+    'unreadable-content',
+  ]),
   status: z.enum(['pass', 'fail', 'inconclusive']),
   summary: z.string(),
   offendingPlaceholders: z.array(z.string()).readonly(),

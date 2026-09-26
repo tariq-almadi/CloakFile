@@ -107,6 +107,9 @@ export class SanitizationPipeline {
       generated,
       applied: anonymization.applied,
       skipped: anonymization.skipped,
+      // Carried from extraction: content we never read cannot be vouched for,
+      // however clean the parts we did read turn out to be.
+      unreadable: document.unreadable,
     });
 
     if (this.#strictVerification && verification.status !== 'pass') {

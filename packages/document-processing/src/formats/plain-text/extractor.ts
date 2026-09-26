@@ -40,6 +40,9 @@ export class PlainTextExtractor implements DocumentExtractor {
       text,
       segments: [{ start: 0, end: text.length, locator: 'document', region: 'body' }],
       capabilities: this.capabilities,
+      // For these formats the bytes are the text, so there is nothing we can
+      // fail to read: either decoding succeeded or extraction already threw.
+      unreadable: [],
       warnings: [],
     };
   }

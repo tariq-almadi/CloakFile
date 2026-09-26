@@ -13,10 +13,11 @@ His credit card is 4111 1111 1111 1111.         His credit card is [CREDIT_CARD_
 The result is safe to hand to an external AI service, a vendor, or a support
 ticket, because the sensitive values are no longer in the file.
 
-> **Status: Phase 1 foundation.** The architecture, the security boundaries and
-> a working TXT/CSV/JSON pipeline are in place. PDF and DOCX are deliberately
-> unimplemented. This has not had a security review. See
-> [Security limitations](#security-limitations) before using it with real data.
+> **Status: Phase 2.** TXT, CSV, JSON and PDF work end to end. DOCX is
+> deliberately unimplemented. PDF output is **text, not a visual copy** of the
+> original — see [PDF support](#pdf-support). This has not had a security
+> review. See [Security limitations](#security-limitations) before using it
+> with real data.
 
 ---
 
@@ -92,18 +93,17 @@ Full detail: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
 ## Prerequisites
 
-| Tool    | Version              | Notes                                    |
-| ------- | -------------------- | ---------------------------------------- |
-| Node.js | **22.12.0 or newer** | See the note below if you are on 22.11.x |
-| npm     | 10.9 or newer        | Ships with Node 22                       |
+| Tool    | Version              | Notes                                  |
+| ------- | -------------------- | -------------------------------------- |
+| Node.js | **22.13.0 or newer** | `.nvmrc` pins 22.23.3; see note below  |
+| npm     | 10.9 or newer        | Ships with Node 22                     |
 
-> **Node version note.** The toolchain (Vite, Vitest) declares
-> `node >= 22.12.0`. The project currently runs on 22.11.x, but two things do
-> not: Vite 8 (its native bundler binding is an optional dependency that npm
-> silently skips on an engine mismatch) and `jsdom` (it needs `require(esm)`,
-> added in 22.12). Both are avoided for now — see
-> [docs/decisions/0002-toolchain-and-node-baseline.md](docs/decisions/0002-toolchain-and-node-baseline.md).
-> Upgrading to Node 22.12+ or 24 LTS is recommended.
+> **Node version note.** `pdfjs-dist` declares `node >= 22.13.0`. Below that,
+> npm does not fail — it quietly resolves to an older major of pdf.js, and you
+> end up running a different PDF engine than the one this project was tested
+> against. The floor is enforced in `engines` and CI runs against it directly.
+> See [docs/decisions/0002](docs/decisions/0002-toolchain-and-node-baseline.md)
+> and [0003](docs/decisions/0003-detection-and-document-libraries.md).
 
 ---
 
@@ -200,6 +200,7 @@ touching each other's files.
 | Finding PII                               | `packages/detection/`           | `@cloakfile/shared`                                   |
 | Placeholders and replacement              | `packages/anonymization/`       | `@cloakfile/shared`                                   |
 | PDF, DOCX, format handling                | `packages/document-processing/` | `@cloakfile/shared`                                   |
+| PDF specifically                          | `packages/document-processing/src/formats/pdf/` | as above                              |
 | Proving output is clean                   | `packages/verification/`        | `@cloakfile/shared`, `@cloakfile/document-processing` |
 | The overall flow                          | `packages/pipeline/`            | all of the above                                      |
 | Shared types and the API contract         | `packages/shared/`              | nothing                                               |
@@ -229,20 +230,68 @@ git push -u origin feat/pdf-extraction
 
 ---
 
+## PDF support
+
+PDF works, with one trade-off stated up front:
+
+> **The sanitized PDF is text, not a visual copy of the original.** Layout,
+> fonts, images, colours and tables are not preserved.
+
+That is a deliberate consequence of the only approach that can make an honest
+claim. Two things make editing a PDF in place impossible in the general case:
+
+1. **There is nothing to find-and-replace.** With a subset font — what every
+   modern PDF producer emits — the content stream contains glyph IDs, not
+   letters. `John Doe` can be stored as `<0001000200030004>`, with the mapping
+   to characters in a separate table. And there is no way to write
+   `[PERSON_001]` in a font whose subset contains no `[`.
+2. **A page is only one of the places a value can be.** Annotations, form
+   fields, document metadata, XMP packets, embedded files, bookmarks,
+   JavaScript actions, invisible OCR text layers, and objects orphaned by an
+   incremental update all survive naive processing.
+
+So CloakFile reads text out of **every** channel above, sanitizes it, and
+writes a **new** PDF containing only the sanitized text. Nothing is copied
+across. A channel that is never copied cannot leak.
+
+| Input                              | Result                                                                          |
+| ---------------------------------- | ------------------------------------------------------------------------------- |
+| Text PDF, any fonts or positioning | Sanitized. Layout not preserved                                                 |
+| Form fields, annotations, comments | Text extracted, sanitized, then rendered as labelled sections                    |
+| Metadata, XMP, bookmarks           | Removed entirely, and you are told it was removed                                |
+| Embedded files / attachments       | Removed entirely, never parsed. Filenames are reported, contents are not         |
+| Invisible OCR text layers          | Extracted and sanitized like any other text                                      |
+| **Scanned / image-only pages**     | **Refused.** No text to extract, so verification is `inconclusive` and the download is blocked |
+| Non-Latin scripts                  | Degraded to `?`, counted and reported. The output font is standard Helvetica     |
+| Digitally signed PDFs              | Signature destroyed — a rebuilt document is a different document                 |
+
+There is no OCR, deliberately. OCR would produce a confident answer of unknown
+accuracy, and for this product a wrong "sanitized" is worse than an honest
+refusal.
+
+Full reasoning:
+[ADR 0003](docs/decisions/0003-detection-and-document-libraries.md).
+
+---
+
 ## What works today
 
-- TXT, CSV and JSON end to end: upload → detect → replace → verify → download
+- TXT, CSV, JSON and PDF end to end: upload → detect → replace → verify →
+  download
 - Detectors: email, phone (international, via libphonenumber-js), credit card
   (Luhn + issuer validated), US SSN, IP address, URL, custom regex, and names /
   organizations via compromise
 - Consistent placeholders: one value, one placeholder, throughout the document
-- Post-generation verification with fail-closed behaviour
+- Post-generation verification with fail-closed behaviour, including two
+  PDF-specific checks that use a different parser from the one that wrote the
+  file
 - Privacy-preserving review UI and API contract
 
 ## What is intentionally not built
 
-- **PDF** and **DOCX** extraction and generation — registered, documented, and
-  they fail loudly with `NOT_IMPLEMENTED`
+- **DOCX** extraction and generation — registered, documented, and fails loudly
+  with `NOT_IMPLEMENTED`
+- PDF layout preservation — see [PDF support](#pdf-support)
 - Address, government ID, bank account and date-of-birth detection — registered
   as stubs that report themselves as unimplemented
 - OCR and scanned documents
@@ -262,9 +311,13 @@ Known limitations, in full, are in [docs/SECURITY.md](docs/SECURITY.md) and
   It misses names it does not know and occasionally flags ordinary words. It is
   marked `experimental` in the UI for that reason. Never rely on automatic name
   detection alone for a high-stakes document.
-- **Verification proves absence from extracted text, not from the file.** For
-  plain text those are the same thing. For PDF and DOCX they will not be, which
-  is one reason those formats are not enabled.
+- **Verification proves absence from the content we can read back.** For plain
+  text that is the whole file. For PDF it covers text, every decompressed
+  stream and every string in the document, but **not pixels** — which is why
+  image-only pages are refused rather than passed.
+- **PDF handling is new and has been tested against fixtures we wrote**, which
+  means it exercises the failure modes we already thought of. It has not been
+  run against a large real-world corpus.
 - **Uploads are buffered in memory**, which bounds file size and prevents
   horizontal scaling. This is a deliberate trade to avoid temporary files.
 - **In-process erasure is best-effort.** Clearing a JavaScript `Map` does not

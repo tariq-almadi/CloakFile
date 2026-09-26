@@ -1,6 +1,18 @@
 # 0002 · Toolchain versions and the Node baseline
 
-**Status:** Accepted · Phase 1 · **Revisit when the team is on Node ≥ 22.12**
+**Status:** Accepted · Phase 1 · **Baseline amended in Phase 2 — see below**
+
+> **Amendment (Phase 2, PDF).** The declared baseline is now
+> **`node >= 22.13.0`**, raised from 22.12.0 because `pdfjs-dist@6` requires it
+> ([ADR 0003](0003-detection-and-document-libraries.md)). `.nvmrc` pins 22.23.3
+> and CI runs the test matrix against both the floor and the pin.
+>
+> The two deferrals below — Vite 7 instead of 8, and Node instead of jsdom for
+> web tests — were each conditioned on "revisit when the team is on Node ≥
+> 22.12". **That condition is now met, but neither has been revisited.** They
+> were deliberately left alone so that the PDF work landed without an unrelated
+> bundler upgrade in the same change. Both are still open, and the reasoning
+> recorded below is now historical rather than current.
 
 ## Context
 
@@ -56,3 +68,14 @@ next contributor to rediscover the rolldown failure themselves.
 Everything installs, builds, lints, type-checks and tests on Node 22.11
 **today**, while the documentation points at 22.12+. Three version pins carry a
 "revisit when" condition rather than being silently frozen.
+
+## Postscript
+
+The rolldown incident recorded above was not a one-off. The same failure mode —
+**an engine constraint that npm resolves around instead of reporting** — recurred
+in Phase 2 with `pdfjs-dist@6`, and again the symptom was a silently wrong
+version rather than an error.
+
+The generalised rule, now applied in ADR 0003: when adopting a dependency,
+check its `engines` against the declared baseline explicitly, and confirm the
+version that actually installed is the version that was intended.

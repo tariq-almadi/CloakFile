@@ -11,7 +11,27 @@ import type { PIIType } from './pii.js';
 export type VerificationStatus = 'pass' | 'fail' | 'inconclusive';
 
 export type VerificationCheckId =
-  'residual-values' | 'placeholders-present' | 'output-parses' | 'metadata-clean';
+  | 'residual-values'
+  | 'placeholders-present'
+  | 'output-parses'
+  | 'metadata-clean'
+  /**
+   * Channels the generator never writes to — annotations, form fields, embedded
+   * files, XMP. Asserting they are empty is independent evidence: the generator
+   * makes no claim about them, so a generator bug cannot hide the failure.
+   */
+  | 'structural-channels'
+  /**
+   * Every indirect object decompressed and searched via a code path that does
+   * not share the primary extractor's decoder, so a blind spot in one is not a
+   * blind spot in both.
+   */
+  | 'deep-streams'
+  /**
+   * Content we could not read at all — a scanned page carries its text as
+   * pixels. Never a pass: what we cannot read, we cannot vouch for.
+   */
+  | 'unreadable-content';
 
 export interface VerificationCheck {
   readonly id: VerificationCheckId;
