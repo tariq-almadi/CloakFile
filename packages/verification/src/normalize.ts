@@ -36,6 +36,45 @@ export function residualVariants(value: string): readonly string[] {
  * difference in whitespace or Unicode composition between input and output
  * cannot hide a residual value.
  */
+/**
+ * Whether a residual variant appears in normalized output.
+ *
+ * Digit-heavy and formatted values keep substring search so `4111 1111…` still
+ * matches `4111111111111111`. Letter-only tokens use word boundaries so a short
+ * name like `Vance` is not reported inside `advanced`.
+ */
+export function residualVariantMatches(
+  haystack: ReturnType<typeof normalizeHaystack>,
+  variant: string,
+  originalValue: string,
+): boolean {
+  if (/^\d{6,}$/u.test(variant)) {
+    return haystack.digits.includes(variant);
+  }
+
+  const valueHasDigit = /\d/u.test(originalValue);
+  const valueHasSeparator = /[\s.\-()_/]/u.test(originalValue);
+
+  if (valueHasDigit || valueHasSeparator) {
+    return (
+      haystack.lowered.includes(variant) ||
+      haystack.collapsed.includes(variant) ||
+      haystack.separatorless.includes(variant)
+    );
+  }
+
+  return (
+    lettersBounded(haystack.lowered, variant) || lettersBounded(haystack.collapsed, variant)
+  );
+}
+
+function lettersBounded(haystack: string, variant: string): boolean {
+  if (variant.length === 0) return false;
+  const escaped = variant.replace(/[.*+?^${}()|[\]\\]/gu, '\\$&');
+  const re = new RegExp(`(?<![\\p{L}\\p{M}])${escaped}(?![\\p{L}\\p{M}])`, 'iu');
+  return re.test(haystack);
+}
+
 export function normalizeHaystack(text: string): {
   readonly raw: string;
   readonly lowered: string;

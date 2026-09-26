@@ -88,7 +88,13 @@ export function workflowReducer(state: WorkflowState, action: WorkflowAction): W
       return { ...state, step: 'analyzing', error: null, analysis: null, result: null };
 
     case 'analysis-succeeded':
-      return { ...state, step: 'review', analysis: action.analysis, excludedPlaceholders: [] };
+      return {
+        ...state,
+        step: 'review',
+        analysis: action.analysis,
+        excludedPlaceholders: [],
+        error: null,
+      };
 
     case 'placeholder-toggled': {
       const isExcluded = state.excludedPlaceholders.includes(action.placeholder);
@@ -124,5 +130,14 @@ export function canAnalyze(state: WorkflowState): boolean {
 }
 
 export function canSanitize(state: WorkflowState): boolean {
-  return state.step === 'review' && state.analysis !== null;
+  return (
+    state.step === 'review' &&
+    state.analysis !== null &&
+    !analysisWarningsBlockRelease(state.analysis.warnings)
+  );
+}
+
+/** True when analyze already warned that strict verification will refuse release. */
+export function analysisWarningsBlockRelease(warnings: readonly string[]): boolean {
+  return warnings.some((warning) => warning.includes('cannot be verified as sanitized'));
 }

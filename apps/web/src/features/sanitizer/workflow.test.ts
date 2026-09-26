@@ -1,6 +1,12 @@
 import { describe, expect, it } from 'vitest';
 
-import { initialWorkflowState, workflowReducer, type WorkflowState } from './workflow.js';
+import {
+  analysisWarningsBlockRelease,
+  canSanitize,
+  initialWorkflowState,
+  workflowReducer,
+  type WorkflowState,
+} from './workflow.js';
 
 function stateWithAnalysis(): WorkflowState {
   return workflowReducer(
@@ -77,6 +83,22 @@ describe('workflow reducer', () => {
       placeholder: '[PERSON_001]',
     });
     expect(restored.excludedPlaceholders).toEqual([]);
+  });
+
+  it('blocks generate when analyze warned about unscannable pages', () => {
+    const review = workflowReducer(
+      { ...initialWorkflowState, step: 'analyzing' },
+      {
+        type: 'analysis-succeeded',
+        analysis: {
+          ...stateWithAnalysis().analysis!,
+          warnings: ['Page 1 cannot be verified as sanitized.'],
+        },
+      },
+    );
+
+    expect(analysisWarningsBlockRelease(review.analysis!.warnings)).toBe(true);
+    expect(canSanitize(review)).toBe(false);
   });
 
   it('returns to review rather than a dead end when sanitization fails', () => {

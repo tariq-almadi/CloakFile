@@ -108,9 +108,46 @@ export function useSanitizerWorkflow(): SanitizerWorkflow {
 }
 
 function toMessage(error: unknown): string {
-  if (error instanceof ApiError) return error.message;
+  if (error instanceof ApiError) return formatApiError(error);
   if (error instanceof Error) return error.message;
   return 'Something went wrong.';
+}
+
+function formatApiError(error: ApiError): string {
+  if (error.code !== 'VERIFICATION_FAILED') {
+    return error.message;
+  }
+
+  const status = error.details?.['status'];
+  const summaries = error.details?.['summaries'];
+  const summaryLines =
+    Array.isArray(summaries) && summaries.every((line) => typeof line === 'string')
+      ? summaries
+      : [];
+
+  if (status === 'inconclusive') {
+    return [
+      'We generated a file but could not confirm it is safe to share.',
+      'This often happens with scanned PDFs or pages that contain only images — the text is in the pixels, not in a layer we can read or rewrite.',
+      'Try exporting a text-based PDF, or upload a .txt / .csv / .json file instead.',
+      ...summaryLines,
+    ].join(' ');
+  }
+
+  const placeholders = error.details?.['offendingPlaceholders'];
+  const placeholderNote =
+    Array.isArray(placeholders) && placeholders.length > 0
+      ? ` Placeholders involved: ${placeholders.filter((p): p is string => typeof p === 'string').join(', ')}.`
+      : '';
+
+  return [
+    error.message,
+    'Some values may still be present in the output, so the download was blocked.',
+    placeholderNote.trim(),
+    ...summaryLines,
+  ]
+    .filter((part) => part.length > 0)
+    .join(' ');
 }
 
 function triggerBrowserDownload(blob: Blob, fileName: string): void {

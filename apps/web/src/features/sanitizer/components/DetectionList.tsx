@@ -37,7 +37,8 @@ export function DetectionList({
     <section className="rounded border border-slate-300 p-4">
       <h2 className="font-semibold">3. Detected information</h2>
       <p className="mt-1 text-xs text-slate-500">
-        Untick anything you would rather keep in the document.
+        Checked items will be replaced with placeholders. Untick anything you want to leave unchanged
+        (kept values stay in the file; verification may still block download if other issues apply).
       </p>
 
       <ul className="mt-2 divide-y divide-slate-200">

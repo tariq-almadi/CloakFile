@@ -15,7 +15,7 @@ function resolveApiBaseUrl(): string {
   const configured: unknown = import.meta.env['VITE_API_BASE_URL'];
   return typeof configured === 'string' && configured.length > 0
     ? configured.replace(/\/$/u, '')
-    : 'http://localhost:3001';
+    : 'http://127.0.0.1:3001';
 }
 
 const API_BASE_URL = resolveApiBaseUrl();
@@ -24,12 +24,19 @@ const API_BASE_URL = resolveApiBaseUrl();
 export class ApiError extends Error {
   readonly code: string;
   readonly requestId: string | undefined;
+  readonly details: Readonly<Record<string, unknown>> | undefined;
 
-  constructor(code: string, message: string, requestId?: string) {
+  constructor(
+    code: string,
+    message: string,
+    requestId?: string,
+    details?: Readonly<Record<string, unknown>>,
+  ) {
     super(message);
     this.name = 'ApiError';
     this.code = code;
     this.requestId = requestId;
+    this.details = details;
   }
 }
 
@@ -124,7 +131,12 @@ async function request<T>(path: string, init: RequestInit): Promise<T> {
 async function toApiError(response: Response): Promise<ApiError> {
   try {
     const body = (await response.json()) as ErrorResponse;
-    return new ApiError(body.error.code, body.error.message, body.error.requestId);
+    return new ApiError(
+      body.error.code,
+      body.error.message,
+      body.error.requestId,
+      body.error.details,
+    );
   } catch {
     return new ApiError('INTERNAL_ERROR', `Request failed with status ${String(response.status)}.`);
   }

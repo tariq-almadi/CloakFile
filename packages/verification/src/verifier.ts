@@ -6,7 +6,7 @@ import {
   type VerificationStatus,
 } from '@cloakfile/shared';
 
-import { normalizeHaystack, residualVariants } from './normalize.js';
+import { normalizeHaystack, residualVariantMatches, residualVariants } from './normalize.js';
 import type { SanitizationVerifier, VerificationInput } from './types.js';
 
 /**
@@ -223,13 +223,7 @@ function findResidual(text: string, { applied, skipped }: VerificationInput): re
 
   for (const detection of applied) {
     for (const variant of residualVariants(detection.value)) {
-      const found =
-        haystack.lowered.includes(variant) ||
-        haystack.collapsed.includes(variant) ||
-        haystack.separatorless.includes(variant) ||
-        (/^\d{6,}$/u.test(variant) && haystack.digits.includes(variant));
-
-      if (found) {
+      if (residualVariantMatches(haystack, variant, detection.value)) {
         // Report the placeholder, never the residual value. A verification
         // report is returned to the client and written to logs.
         offending.add(detection.placeholder);

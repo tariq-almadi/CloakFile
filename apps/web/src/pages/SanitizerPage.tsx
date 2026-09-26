@@ -7,7 +7,11 @@ import { DetectionList } from '../features/sanitizer/components/DetectionList.js
 import { UploadPanel } from '../features/sanitizer/components/UploadPanel.js';
 import { VerificationSummary } from '../features/sanitizer/components/VerificationSummary.js';
 import { useSanitizerWorkflow } from '../features/sanitizer/useSanitizerWorkflow.js';
-import { canAnalyze, canSanitize } from '../features/sanitizer/workflow.js';
+import {
+  analysisWarningsBlockRelease,
+  canAnalyze,
+  canSanitize,
+} from '../features/sanitizer/workflow.js';
 
 /**
  * Composes the four steps of the flow. Layout only — every decision about what
@@ -79,15 +83,32 @@ export function SanitizerPage(): JSX.Element {
             onToggle={workflow.togglePlaceholder}
           />
 
+          {state.error !== null && state.step === 'review' && (
+            <p
+              role="alert"
+              className="rounded border border-red-300 bg-red-50 p-3 text-sm text-red-800"
+            >
+              {state.error}
+            </p>
+          )}
+
+          {analysisWarningsBlockRelease(state.analysis.warnings) && (
+            <p className="rounded border border-slate-300 bg-slate-50 p-3 text-sm text-slate-700">
+              This document has pages CloakFile cannot read as text (often scanned images). A
+              sanitized file cannot be verified, so download will stay disabled. Try a text-based PDF
+              or a .txt file to test the full flow.
+            </p>
+          )}
+
           <button
             type="button"
             className="rounded bg-slate-900 px-3 py-1.5 text-sm text-white disabled:opacity-40"
-            disabled={!canSanitize(state)}
+            disabled={!canSanitize(state) || state.step === 'sanitizing'}
             onClick={() => {
               void workflow.sanitize();
             }}
           >
-            {state.step === 'sanitizing' ? 'Generating...' : 'Generate sanitized document'}
+            {state.step === 'sanitizing' ? 'Generating…' : 'Generate sanitized document'}
           </button>
         </>
       )}

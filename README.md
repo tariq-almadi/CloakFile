@@ -127,7 +127,7 @@ against. The values most worth knowing:
 | Variable                           | Default                 | Purpose                              |
 | ---------------------------------- | ----------------------- | ------------------------------------ |
 | `API_PORT`                         | `3001`                  | API listen port                      |
-| `API_CORS_ORIGINS`                 | `http://localhost:5173` | Comma-separated allowlist. Never `*` |
+| `API_CORS_ORIGINS`                 | `http://127.0.0.1:5173,http://localhost:5173` | Comma-separated allowlist. Never `*` |
 | `UPLOAD_MAX_FILE_BYTES`            | `10485760` (10 MiB)     | Bounds per-request memory            |
 | `SESSION_TTL_SECONDS`              | `900`                   | How long a document stays in memory  |
 | `SANITIZATION_STRICT_VERIFICATION` | `true`                  | Refuse to release unverified output  |

@@ -113,15 +113,15 @@ export class SanitizationPipeline {
     });
 
     if (this.#strictVerification && verification.status !== 'pass') {
+      const failingChecks = verification.checks.filter((check) => check.status !== 'pass');
       throw new VerificationFailedError(
         'The sanitized document did not pass verification and was not released.',
         {
           details: {
             status: verification.status,
             // Placeholders only. The residual values themselves stay internal.
-            offendingPlaceholders: verification.checks.flatMap(
-              (check) => check.offendingPlaceholders,
-            ),
+            offendingPlaceholders: failingChecks.flatMap((check) => check.offendingPlaceholders),
+            summaries: failingChecks.map((check) => check.summary),
           },
         },
       );

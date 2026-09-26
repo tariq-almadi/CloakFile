@@ -14,7 +14,9 @@ const environmentSchema = z.object({
   API_HOST: z.string().min(1).default('127.0.0.1'),
   API_PORT: z.coerce.number().int().min(1).max(65535).default(3001),
 
-  API_CORS_ORIGINS: z.string().default('http://localhost:5173'),
+  // Vite prints http://127.0.0.1:5173; browsers treat that as a different origin
+  // from http://localhost:5173, so both must be allowed in local development.
+  API_CORS_ORIGINS: z.string().default('http://127.0.0.1:5173,http://localhost:5173'),
 
   UPLOAD_MAX_FILE_BYTES: z.coerce
     .number()
