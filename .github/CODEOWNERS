@@ -1,0 +1,39 @@
+# Code ownership, mapped to the areas in README.md.
+#
+# Replace the placeholder handles with real GitHub usernames or teams before
+# pushing. Until then these lines document intent rather than enforcing it.
+
+# Default
+*                               @OWNER-PLACEHOLDER
+
+# ---------------------------------------------------------------------------
+# Cross-cutting. A change here can break four packages and can move the
+# privacy boundary, so it needs a reviewer from another area.
+# ---------------------------------------------------------------------------
+/packages/shared/               @OWNER-PLACEHOLDER @SECURITY-PLACEHOLDER
+
+# ---------------------------------------------------------------------------
+# Feature areas
+# ---------------------------------------------------------------------------
+/apps/web/                      @FRONTEND-PLACEHOLDER
+/apps/api/                      @BACKEND-PLACEHOLDER
+/packages/detection/            @DETECTION-PLACEHOLDER
+/packages/anonymization/        @ANONYMIZATION-PLACEHOLDER
+/packages/document-processing/  @DOCUMENTS-PLACEHOLDER
+/packages/pipeline/             @BACKEND-PLACEHOLDER
+
+# ---------------------------------------------------------------------------
+# Security-sensitive. These encode the product's safety guarantees.
+# ---------------------------------------------------------------------------
+/packages/verification/         @SECURITY-PLACEHOLDER
+/packages/document-processing/src/security/  @SECURITY-PLACEHOLDER
+/apps/api/src/security/         @SECURITY-PLACEHOLDER
+/apps/api/src/plugins/          @SECURITY-PLACEHOLDER
+/packages/shared/src/privacy/   @SECURITY-PLACEHOLDER
+/docs/SECURITY.md               @SECURITY-PLACEHOLDER
+/docs/THREAT-MODEL.md           @SECURITY-PLACEHOLDER
+
+# Toolchain and CI
+/.github/                       @OWNER-PLACEHOLDER
+/eslint.config.js               @OWNER-PLACEHOLDER
+/tsconfig*.json                 @OWNER-PLACEHOLDER

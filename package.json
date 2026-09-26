@@ -1,0 +1,45 @@
+{
+  "name": "secure-document-sanitizer",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Privacy-focused document sanitizer that replaces sensitive information with stable placeholders, entirely on our own infrastructure.",
+  "type": "module",
+  "engines": {
+    "node": ">=22.12.0",
+    "npm": ">=10.9.0"
+  },
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "scripts": {
+    "build": "npm run build:packages && npm run build:web",
+    "build:packages": "tsc -b",
+    "build:web": "npm run build --workspace @sds/web",
+    "clean": "tsc -b --clean",
+    "dev": "npm run build:packages && run-p dev:api dev:web",
+    "dev:api": "npm run dev --workspace @sds/api",
+    "dev:web": "npm run dev --workspace @sds/web",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "test": "npm run build:packages && vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "npm run build:packages && vitest run --coverage",
+    "typecheck": "npm run build:packages && tsc -p tsconfig.check.json --noEmit && npm run typecheck --workspace @sds/web",
+    "verify": "npm run typecheck && npm run lint && npm run format:check && npm run test"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.0",
+    "@types/node": "^22.20.4",
+    "@vitest/coverage-v8": "^5.0.2",
+    "eslint": "^10.11.0",
+    "eslint-config-prettier": "^10.1.8",
+    "npm-run-all2": "^9.0.3",
+    "prettier": "^3.9.9",
+    "typescript": "^6.0.3",
+    "typescript-eslint": "^8.70.1",
+    "vitest": "^5.0.2"
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "$schema": "https://json.schemastore.org/tsconfig",
+  "files": [],
+  "references": [
+    { "path": "./packages/shared" },
+    { "path": "./packages/detection" },
+    { "path": "./packages/anonymization" },
+    { "path": "./packages/document-processing" },
+    { "path": "./packages/verification" },
+    { "path": "./packages/pipeline" },
+    { "path": "./apps/api" }
+  ]
+}

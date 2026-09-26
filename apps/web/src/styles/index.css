@@ -1,0 +1,9 @@
+@import 'tailwindcss';
+
+/*
+ * Tailwind v4 is configured in CSS rather than a `tailwind.config.js`. Theme
+ * tokens belong in an `@theme` block here.
+ *
+ * Styling is intentionally minimal at this stage: the UI is structural
+ * scaffolding, not a design. See docs/DEVELOPMENT.md.
+ */

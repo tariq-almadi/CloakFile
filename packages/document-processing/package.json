@@ -1,0 +1,25 @@
+{
+  "name": "@sds/document-processing",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Format detection plus the extractor/transformer/generator abstraction for each supported document type.",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -b",
+    "clean": "tsc -b --clean"
+  },
+  "dependencies": {
+    "@sds/shared": "*"
+  }
+}

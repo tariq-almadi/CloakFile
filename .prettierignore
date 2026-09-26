@@ -1,0 +1,9 @@
+node_modules/
+dist/
+build/
+coverage/
+*.tsbuildinfo
+package-lock.json
+
+# Fixture files are byte-sensitive: formatting them would break offset-based tests.
+tests/fixtures/

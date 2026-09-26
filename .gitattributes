@@ -1,0 +1,8 @@
+# Normalise line endings so offset-sensitive detection tests behave identically
+# on Windows, macOS and Linux.
+* text=auto eol=lf
+
+*.png binary
+*.jpg binary
+*.pdf binary
+*.docx binary

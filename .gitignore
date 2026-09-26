@@ -1,0 +1,40 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+build/
+*.tsbuildinfo
+
+# Test / coverage output
+coverage/
+.vitest/
+
+# Environment files - NEVER commit real secrets
+.env
+.env.*
+!.env.example
+
+# Logs (may inadvertently contain document contents - never commit)
+*.log
+logs/
+npm-debug.log*
+
+# Runtime scratch space for document processing.
+# Nothing here is ever safe to commit: it can contain uploaded user documents.
+tmp/
+.tmp/
+uploads/
+scratch/
+
+# Editors / OS
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+
+# Local caches
+.eslintcache
+.cache/

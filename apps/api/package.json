@@ -1,0 +1,39 @@
+{
+  "name": "@sds/api",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Fastify HTTP boundary: upload validation, ephemeral sessions and the sanitization endpoints.",
+  "type": "module",
+  "main": "./dist/server.js",
+  "exports": {
+    "./app": {
+      "types": "./dist/app.d.ts",
+      "default": "./dist/app.js"
+    },
+    "./config": {
+      "types": "./dist/config.d.ts",
+      "default": "./dist/config.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -b",
+    "clean": "tsc -b --clean",
+    "dev": "tsx watch src/server.ts",
+    "start": "node dist/server.js"
+  },
+  "dependencies": {
+    "@fastify/cors": "^11.3.0",
+    "@fastify/helmet": "^13.1.1",
+    "@fastify/multipart": "^10.1.2",
+    "@fastify/rate-limit": "^11.2.0",
+    "@sds/detection": "*",
+    "@sds/document-processing": "*",
+    "@sds/pipeline": "*",
+    "@sds/shared": "*",
+    "fastify": "^5.12.5",
+    "zod": "^4.6.5"
+  },
+  "devDependencies": {
+    "tsx": "^4.23.15"
+  }
+}
