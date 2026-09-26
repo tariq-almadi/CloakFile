@@ -1,4 +1,4 @@
-import { isAppError, type ErrorCode, type ErrorResponse } from '@sds/shared';
+import { isAppError, type ErrorCode, type ErrorResponse } from '@cloakfile/shared';
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 
 const STATUS_BY_CODE: Readonly<Record<ErrorCode, number>> = {

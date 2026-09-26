@@ -1,4 +1,4 @@
-import { isAppError } from '@sds/shared';
+import { isAppError } from '@cloakfile/shared';
 import type { FastifyError, FastifyRequest, FastifyServerOptions } from 'fastify';
 
 /**

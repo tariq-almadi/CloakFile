@@ -1,4 +1,8 @@
-import { NotImplementedError, type GeneratedDocument, type SanitizationMode } from '@sds/shared';
+import {
+  NotImplementedError,
+  type GeneratedDocument,
+  type SanitizationMode,
+} from '@cloakfile/shared';
 
 import type { DocumentGenerator, GenerationInput } from '../../types.js';
 

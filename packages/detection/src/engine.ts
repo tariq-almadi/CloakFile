@@ -5,7 +5,7 @@ import {
   type Detection,
   type PIIType,
   type RawDetection,
-} from '@sds/shared';
+} from '@cloakfile/shared';
 
 import type { DetectorRegistry } from './registry.js';
 import { resolveOverlaps } from './resolve-overlaps.js';

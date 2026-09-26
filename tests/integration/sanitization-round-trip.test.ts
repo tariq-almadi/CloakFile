@@ -1,5 +1,5 @@
-import { SanitizationPipeline } from '@sds/pipeline';
-import type { AnalyzeOptions } from '@sds/shared';
+import { SanitizationPipeline } from '@cloakfile/pipeline';
+import type { AnalyzeOptions } from '@cloakfile/shared';
 import { describe, expect, it } from 'vitest';
 
 import {

@@ -1,5 +1,5 @@
 {
-  "name": "@sds/anonymization",
+  "name": "@cloakfile/anonymization",
   "version": "0.1.0",
   "private": true,
   "description": "Session-scoped placeholder allocation and deterministic text replacement.",
@@ -20,6 +20,6 @@
     "clean": "tsc -b --clean"
   },
   "dependencies": {
-    "@sds/shared": "*"
+    "@cloakfile/shared": "*"
   }
 }

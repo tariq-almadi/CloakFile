@@ -1,5 +1,5 @@
 {
-  "name": "@sds/document-processing",
+  "name": "@cloakfile/document-processing",
   "version": "0.1.0",
   "private": true,
   "description": "Format detection plus the extractor/transformer/generator abstraction for each supported document type.",
@@ -20,6 +20,6 @@
     "clean": "tsc -b --clean"
   },
   "dependencies": {
-    "@sds/shared": "*"
+    "@cloakfile/shared": "*"
   }
 }

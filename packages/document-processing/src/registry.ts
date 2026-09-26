@@ -4,7 +4,7 @@ import {
   type DocumentFormat,
   type ExtractedDocument,
   type GeneratedDocument,
-} from '@sds/shared';
+} from '@cloakfile/shared';
 
 import type {
   DocumentExtractor,

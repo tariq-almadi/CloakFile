@@ -1,4 +1,4 @@
-import type { RawDetection } from '@sds/shared';
+import type { RawDetection } from '@cloakfile/shared';
 import { describe, expect, it } from 'vitest';
 
 import { resolveOverlaps } from './resolve-overlaps.js';

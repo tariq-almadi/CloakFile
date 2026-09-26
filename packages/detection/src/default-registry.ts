@@ -1,4 +1,4 @@
-import type { CustomPattern } from '@sds/shared';
+import type { CustomPattern } from '@cloakfile/shared';
 
 import { CreditCardDetector } from './detectors/credit-card-detector.js';
 import { CustomRegexDetector } from './detectors/custom-regex-detector.js';

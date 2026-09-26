@@ -1,5 +1,5 @@
 {
-  "name": "@sds/api",
+  "name": "@cloakfile/api",
   "version": "0.1.0",
   "private": true,
   "description": "Fastify HTTP boundary: upload validation, ephemeral sessions and the sanitization endpoints.",
@@ -26,10 +26,10 @@
     "@fastify/helmet": "^13.1.1",
     "@fastify/multipart": "^10.1.2",
     "@fastify/rate-limit": "^11.2.0",
-    "@sds/detection": "*",
-    "@sds/document-processing": "*",
-    "@sds/pipeline": "*",
-    "@sds/shared": "*",
+    "@cloakfile/detection": "*",
+    "@cloakfile/document-processing": "*",
+    "@cloakfile/pipeline": "*",
+    "@cloakfile/shared": "*",
     "fastify": "^5.12.5",
     "zod": "^4.6.5"
   },

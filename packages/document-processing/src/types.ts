@@ -5,7 +5,7 @@ import type {
   GeneratedDocument,
   MaybePromise,
   SanitizationMode,
-} from '@sds/shared';
+} from '@cloakfile/shared';
 
 export interface ExtractionInput {
   readonly bytes: Uint8Array;

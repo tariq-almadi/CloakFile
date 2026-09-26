@@ -1,4 +1,4 @@
-import { UnsupportedFormatError } from '@sds/shared';
+import { UnsupportedFormatError } from '@cloakfile/shared';
 import { describe, expect, it } from 'vitest';
 
 import { detectFormat } from './detect-format.js';

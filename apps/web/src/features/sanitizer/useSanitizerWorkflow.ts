@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useReducer, useState } from 'react';
 
-import type { CapabilitiesResponse, PIIType } from '@sds/shared';
+import type { CapabilitiesResponse, PIIType } from '@cloakfile/shared';
 
 import { ApiError, apiClient } from '../../lib/api-client.js';
 import { initialWorkflowState, workflowReducer, type WorkflowState } from './workflow.js';

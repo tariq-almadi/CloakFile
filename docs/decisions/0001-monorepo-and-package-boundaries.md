@@ -58,5 +58,5 @@ enforced boundaries. Atomic cross-cutting changes.
 
 **Costs.** Packages must be built before the API runs, which surprises new
 contributors (documented in DEVELOPMENT.md). Six `package.json` and `tsconfig`
-files to keep consistent. A change to `@sds/shared` can break four packages —
+files to keep consistent. A change to `@cloakfile/shared` can break four packages —
 mitigated by CODEOWNERS requiring a second reviewer there.

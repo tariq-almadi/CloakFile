@@ -71,7 +71,7 @@ touch packages/detection/src/detectors/iban-detector.test.ts
 ```
 
 ```ts
-import type { RawDetection } from '@sds/shared';
+import type { RawDetection } from '@cloakfile/shared';
 import type { DetectionInput, Detector } from '../types.js';
 
 export class IbanDetector implements Detector {
@@ -124,7 +124,7 @@ Frontend tests currently run in a Node environment, because the only ones that
 exist cover the pure workflow reducer. For rendering tests:
 
 ```bash
-npm install -D jsdom @testing-library/react --workspace @sds/web
+npm install -D jsdom @testing-library/react --workspace @cloakfile/web
 ```
 
 then set `environment: 'jsdom'` in the `test` block of
@@ -203,7 +203,7 @@ Rules that are about this product rather than about taste:
 - **No `any`.** The `no-unsafe-*` family are errors. Validate at boundaries
   instead — see `toStringArray` in `nlp-entity-detector.ts`, which turns an
   untyped library result into a checked one.
-- **No swallowed errors.** Use the typed errors in `@sds/shared`. Where an error
+- **No swallowed errors.** Use the typed errors in `@cloakfile/shared`. Where an error
   is deliberately not propagated, say why — see the `catch` in the verifier,
   which discards the cause because it could carry document text.
 - **No `console` in `packages/`.** ESLint error.
@@ -292,7 +292,7 @@ with JSON-pointer locators, which also allows per-column and per-field policy.
 
 ## Troubleshooting
 
-**`Cannot find module '@sds/...'`** — the packages are not built. Run
+**`Cannot find module '@cloakfile/...'`** — the packages are not built. Run
 `npm run build:packages`.
 
 **Editor shows errors that `npm run typecheck` does not** — stale project

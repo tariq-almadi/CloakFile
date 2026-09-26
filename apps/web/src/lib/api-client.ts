@@ -4,7 +4,7 @@ import type {
   CapabilitiesResponse,
   ErrorResponse,
   SanitizeResponse,
-} from '@sds/shared';
+} from '@cloakfile/shared';
 
 /**
  * Vite's `import.meta.env` is typed with an index signature returning `any`,

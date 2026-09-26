@@ -1,4 +1,4 @@
-import type { Detection } from '@sds/shared';
+import type { Detection } from '@cloakfile/shared';
 import { describe, expect, it } from 'vitest';
 
 import { Anonymizer, applyAnonymization } from './anonymizer.js';

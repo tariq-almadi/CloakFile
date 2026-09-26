@@ -1,4 +1,4 @@
-import type { RawDetection } from '@sds/shared';
+import type { RawDetection } from '@cloakfile/shared';
 
 import { identifyCardNetwork } from '../internal/card-networks.js';
 import { isLuhnValid } from '../internal/luhn.js';

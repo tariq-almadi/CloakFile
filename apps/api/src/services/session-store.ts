@@ -1,12 +1,12 @@
 import { randomUUID } from 'node:crypto';
 
-import type { AnalysisResult } from '@sds/pipeline';
+import type { AnalysisResult } from '@cloakfile/pipeline';
 import {
   CapacityExceededError,
   SessionNotFoundError,
   type DocumentFormat,
   type GeneratedDocument,
-} from '@sds/shared';
+} from '@cloakfile/shared';
 
 export interface SessionRecord {
   readonly id: string;

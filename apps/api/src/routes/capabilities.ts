@@ -1,6 +1,6 @@
-import { createDefaultRegistry } from '@sds/detection';
-import { createDefaultDocumentRegistry } from '@sds/document-processing';
-import { PII_TYPE_LABELS, type CapabilitiesResponse } from '@sds/shared';
+import { createDefaultRegistry } from '@cloakfile/detection';
+import { createDefaultDocumentRegistry } from '@cloakfile/document-processing';
+import { PII_TYPE_LABELS, type CapabilitiesResponse } from '@cloakfile/shared';
 import type { FastifyInstance } from 'fastify';
 
 import type { AppConfig } from '../config.js';

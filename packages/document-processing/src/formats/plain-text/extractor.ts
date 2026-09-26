@@ -3,7 +3,7 @@ import {
   MAX_EXTRACTED_TEXT_LENGTH,
   type DocumentFormat,
   type ExtractedDocument,
-} from '@sds/shared';
+} from '@cloakfile/shared';
 
 import { decodeUtf8 } from '../../detect-format.js';
 import type { DocumentExtractor, ExtractionInput } from '../../types.js';

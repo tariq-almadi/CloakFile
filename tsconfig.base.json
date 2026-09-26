@@ -1,6 +1,6 @@
 {
   "$schema": "https://json.schemastore.org/tsconfig",
-  "display": "Secure Document Sanitizer - base",
+  "display": "CloakFile - base",
   "compilerOptions": {
     "target": "es2023",
     "lib": ["es2023"],

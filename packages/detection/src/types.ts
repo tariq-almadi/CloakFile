@@ -1,4 +1,4 @@
-import type { Detection, MaybePromise, PIIType, RawDetection } from '@sds/shared';
+import type { Detection, MaybePromise, PIIType, RawDetection } from '@cloakfile/shared';
 
 /**
  * How much trust the product may place in a detector.

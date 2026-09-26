@@ -1,4 +1,8 @@
-import { NotImplementedError, type ExtractedDocument, type FormatCapabilities } from '@sds/shared';
+import {
+  NotImplementedError,
+  type ExtractedDocument,
+  type FormatCapabilities,
+} from '@cloakfile/shared';
 
 import type { DocumentExtractor, ExtractionInput } from '../../types.js';
 
@@ -49,7 +53,7 @@ export const PDF_CAPABILITIES: FormatCapabilities = {
  * remove the text operator underneath. Copy-paste, `pdftotext`, and any parser
  * still return the original value. This architecture treats that as
  * `visual-redaction`, which is explicitly NOT sanitization. See
- * `SanitizationMode` in @sds/shared.
+ * `SanitizationMode` in @cloakfile/shared.
  *
  * ---------------------------------------------------------------------------
  * Intended approach (Phase 2), and its honest limits

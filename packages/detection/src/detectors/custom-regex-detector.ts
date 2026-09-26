@@ -1,4 +1,4 @@
-import type { CustomPattern, RawDetection } from '@sds/shared';
+import type { CustomPattern, RawDetection } from '@cloakfile/shared';
 
 import { compileSafePattern } from '../internal/regex-guard.js';
 import type { DetectionInput, Detector } from '../types.js';

@@ -6,7 +6,7 @@ import type {
   GeneratedDocument,
   PlaceholderGroup,
   VerificationReport,
-} from '@sds/shared';
+} from '@cloakfile/shared';
 
 /**
  * The stages of the sanitization flow, in order.

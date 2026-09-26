@@ -1,4 +1,4 @@
-import type { AnalyzeResponse, PIIType, SanitizeResponse } from '@sds/shared';
+import type { AnalyzeResponse, PIIType, SanitizeResponse } from '@cloakfile/shared';
 
 /**
  * The steps the user moves through. Modelled explicitly so the UI renders from

@@ -1,6 +1,6 @@
 import type { JSX } from 'react';
 
-import type { SanitizeResponse } from '@sds/shared';
+import type { SanitizeResponse } from '@cloakfile/shared';
 
 interface VerificationSummaryProps {
   readonly result: SanitizeResponse;

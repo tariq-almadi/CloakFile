@@ -1,4 +1,4 @@
-# Secure Document Sanitizer
+# CloakFile
 
 Upload a document, get back a **new** document in which sensitive information has
 been replaced with stable placeholders.
@@ -111,7 +111,7 @@ Full detail: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
 ```bash
 git clone <repository-url>
-cd secure-document-sanitizer
+cd cloakfile
 npm install          # installs every workspace
 cp .env.example .env # optional; sensible defaults apply without it
 ```
@@ -193,16 +193,16 @@ their compiled `dist` output.
 Each area is self-contained, so two people can work in parallel without
 touching each other's files.
 
-| If you are working on                     | Work in                         | Depends on                                |
-| ----------------------------------------- | ------------------------------- | ----------------------------------------- |
-| UI, upload flow, review screen            | `apps/web/`                     | `@sds/shared`                             |
-| HTTP, uploads, sessions, security headers | `apps/api/`                     | `@sds/pipeline`, `@sds/shared`            |
-| Finding PII                               | `packages/detection/`           | `@sds/shared`                             |
-| Placeholders and replacement              | `packages/anonymization/`       | `@sds/shared`                             |
-| PDF, DOCX, format handling                | `packages/document-processing/` | `@sds/shared`                             |
-| Proving output is clean                   | `packages/verification/`        | `@sds/shared`, `@sds/document-processing` |
-| The overall flow                          | `packages/pipeline/`            | all of the above                          |
-| Shared types and the API contract         | `packages/shared/`              | nothing                                   |
+| If you are working on                     | Work in                         | Depends on                                            |
+| ----------------------------------------- | ------------------------------- | ----------------------------------------------------- |
+| UI, upload flow, review screen            | `apps/web/`                     | `@cloakfile/shared`                                   |
+| HTTP, uploads, sessions, security headers | `apps/api/`                     | `@cloakfile/pipeline`, `@cloakfile/shared`            |
+| Finding PII                               | `packages/detection/`           | `@cloakfile/shared`                                   |
+| Placeholders and replacement              | `packages/anonymization/`       | `@cloakfile/shared`                                   |
+| PDF, DOCX, format handling                | `packages/document-processing/` | `@cloakfile/shared`                                   |
+| Proving output is clean                   | `packages/verification/`        | `@cloakfile/shared`, `@cloakfile/document-processing` |
+| The overall flow                          | `packages/pipeline/`            | all of the above                                      |
+| Shared types and the API contract         | `packages/shared/`              | nothing                                               |
 
 `packages/shared` is the one file set everyone touches. Changes there need a
 review from another area owner — see [.github/CODEOWNERS](.github/CODEOWNERS).

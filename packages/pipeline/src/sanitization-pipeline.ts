@@ -1,11 +1,11 @@
-import { Anonymizer, applyAnonymization, summarizeGroups } from '@sds/anonymization';
-import { DetectionEngine, createDefaultRegistry } from '@sds/detection';
+import { Anonymizer, applyAnonymization, summarizeGroups } from '@cloakfile/anonymization';
+import { DetectionEngine, createDefaultRegistry } from '@cloakfile/detection';
 import {
   createDefaultDocumentRegistry,
   type DocumentProcessorRegistry,
-} from '@sds/document-processing';
-import { VerificationFailedError } from '@sds/shared';
-import { DefaultSanitizationVerifier, type SanitizationVerifier } from '@sds/verification';
+} from '@cloakfile/document-processing';
+import { VerificationFailedError } from '@cloakfile/shared';
+import { DefaultSanitizationVerifier, type SanitizationVerifier } from '@cloakfile/verification';
 
 import type { AnalysisResult, AnalyzeInput, SanitizeInput, SanitizeResult } from './types.js';
 

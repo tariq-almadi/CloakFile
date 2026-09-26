@@ -1,4 +1,4 @@
-import { SuspiciousDocumentError } from '@sds/shared';
+import { SuspiciousDocumentError } from '@cloakfile/shared';
 
 const EOCD_SIGNATURE = 0x06054b50;
 const CENTRAL_DIRECTORY_SIGNATURE = 0x02014b50;

@@ -1,6 +1,6 @@
 import type { JSX } from 'react';
 
-import { PII_TYPE_LABELS, type PlaceholderGroupDto } from '@sds/shared';
+import { PII_TYPE_LABELS, type PlaceholderGroupDto } from '@cloakfile/shared';
 
 interface DetectionListProps {
   readonly groups: readonly PlaceholderGroupDto[];

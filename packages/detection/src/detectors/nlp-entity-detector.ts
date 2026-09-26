@@ -1,4 +1,4 @@
-import type { PIIType, RawDetection } from '@sds/shared';
+import type { PIIType, RawDetection } from '@cloakfile/shared';
 import nlp from 'compromise';
 
 import { findLiteralOccurrences } from '../internal/text.js';

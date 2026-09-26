@@ -1,6 +1,11 @@
 import type { JSX } from 'react';
 
-import { PII_TYPES, PII_TYPE_LABELS, type DetectorCoverageDto, type PIIType } from '@sds/shared';
+import {
+  PII_TYPES,
+  PII_TYPE_LABELS,
+  type DetectorCoverageDto,
+  type PIIType,
+} from '@cloakfile/shared';
 
 interface CategorySelectorProps {
   readonly enabledTypes: readonly PIIType[];

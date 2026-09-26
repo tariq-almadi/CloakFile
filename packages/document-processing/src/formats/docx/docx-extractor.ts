@@ -1,4 +1,8 @@
-import { NotImplementedError, type ExtractedDocument, type FormatCapabilities } from '@sds/shared';
+import {
+  NotImplementedError,
+  type ExtractedDocument,
+  type FormatCapabilities,
+} from '@cloakfile/shared';
 
 import { assertSafeZip, inspectZip } from '../../security/zip-guard.js';
 import type { DocumentExtractor, ExtractionInput } from '../../types.js';

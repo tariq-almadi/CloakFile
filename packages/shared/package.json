@@ -1,8 +1,8 @@
 {
-  "name": "@sds/shared",
+  "name": "@cloakfile/shared",
   "version": "0.1.0",
   "private": true,
-  "description": "Cross-cutting types, error taxonomy and privacy policy shared by every Secure Document Sanitizer package.",
+  "description": "Cross-cutting types, error taxonomy and privacy policy shared by every CloakFile package.",
   "type": "module",
   "exports": {
     ".": {

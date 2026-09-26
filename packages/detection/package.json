@@ -1,5 +1,5 @@
 {
-  "name": "@sds/detection",
+  "name": "@cloakfile/detection",
   "version": "0.1.0",
   "private": true,
   "description": "Pluggable, offline PII detection: detector interface, registry, overlap resolution and the built-in detectors.",
@@ -20,7 +20,7 @@
     "clean": "tsc -b --clean"
   },
   "dependencies": {
-    "@sds/shared": "*",
+    "@cloakfile/shared": "*",
     "compromise": "^14.17.0",
     "libphonenumber-js": "^1.13.14"
   }

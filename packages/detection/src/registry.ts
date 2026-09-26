@@ -1,4 +1,4 @@
-import type { PIIType } from '@sds/shared';
+import type { PIIType } from '@cloakfile/shared';
 
 import type { Detector, DetectorMaturity } from './types.js';
 

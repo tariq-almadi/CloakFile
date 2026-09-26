@@ -1,4 +1,4 @@
-import { FileTooLargeError, InvalidInputError } from '@sds/shared';
+import { FileTooLargeError, InvalidInputError } from '@cloakfile/shared';
 import type { FastifyInstance, FastifyRequest } from 'fastify';
 
 import type { DocumentsController, UploadPayload } from '../controllers/documents-controller.js';

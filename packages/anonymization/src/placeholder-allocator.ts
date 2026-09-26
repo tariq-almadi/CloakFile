@@ -1,4 +1,4 @@
-import type { DetectionMetadata, PIIType } from '@sds/shared';
+import type { DetectionMetadata, PIIType } from '@cloakfile/shared';
 
 import { canonicalizeValue, placeholderLabel } from './canonicalize.js';
 import type { PlaceholderFormatter } from './types.js';

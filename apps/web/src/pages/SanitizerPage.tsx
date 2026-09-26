@@ -1,6 +1,6 @@
 import type { JSX } from 'react';
 
-import { FORMAT_EXTENSIONS } from '@sds/shared';
+import { FORMAT_EXTENSIONS } from '@cloakfile/shared';
 
 import { CategorySelector } from '../features/sanitizer/components/CategorySelector.js';
 import { DetectionList } from '../features/sanitizer/components/DetectionList.js';
@@ -25,7 +25,7 @@ export function SanitizerPage(): JSX.Element {
   return (
     <main className="mx-auto max-w-3xl space-y-4 p-6">
       <header>
-        <h1 className="text-xl font-bold">Secure Document Sanitizer</h1>
+        <h1 className="text-xl font-bold">CloakFile</h1>
         <p className="text-sm text-slate-600">
           Replace sensitive information with placeholders, so a document can be shared safely.
         </p>

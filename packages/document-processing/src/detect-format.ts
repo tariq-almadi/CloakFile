@@ -1,4 +1,4 @@
-import { UnsupportedFormatError, type DocumentFormat } from '@sds/shared';
+import { UnsupportedFormatError, type DocumentFormat } from '@cloakfile/shared';
 
 export interface FormatProbe {
   /** Extension taken from the upload's filename. A hint only — never trusted alone. */

@@ -1,4 +1,4 @@
-import { PII_TYPE_PRIORITY, type RawDetection } from '@sds/shared';
+import { PII_TYPE_PRIORITY, type RawDetection } from '@cloakfile/shared';
 
 /**
  * Collapse competing claims over the same characters into a non-overlapping set.

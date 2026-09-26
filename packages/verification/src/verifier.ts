@@ -1,10 +1,10 @@
-import { type DocumentProcessorRegistry } from '@sds/document-processing';
+import { type DocumentProcessorRegistry } from '@cloakfile/document-processing';
 import {
   type PIIType,
   type VerificationCheck,
   type VerificationReport,
   type VerificationStatus,
-} from '@sds/shared';
+} from '@cloakfile/shared';
 
 import { normalizeHaystack, residualVariants } from './normalize.js';
 import type { SanitizationVerifier, VerificationInput } from './types.js';

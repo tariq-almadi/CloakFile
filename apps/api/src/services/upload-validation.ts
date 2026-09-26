@@ -1,5 +1,5 @@
-import { detectFormat } from '@sds/document-processing';
-import { FileTooLargeError, InvalidInputError, type DocumentFormat } from '@sds/shared';
+import { detectFormat } from '@cloakfile/document-processing';
+import { FileTooLargeError, InvalidInputError, type DocumentFormat } from '@cloakfile/shared';
 
 import { toSafeFileName } from '../security/filename.js';
 

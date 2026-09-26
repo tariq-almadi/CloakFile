@@ -1,5 +1,5 @@
 {
-  "name": "@sds/verification",
+  "name": "@cloakfile/verification",
   "version": "0.1.0",
   "private": true,
   "description": "Re-extracts generated documents and proves the original sensitive values are gone.",
@@ -20,7 +20,7 @@
     "clean": "tsc -b --clean"
   },
   "dependencies": {
-    "@sds/document-processing": "*",
-    "@sds/shared": "*"
+    "@cloakfile/document-processing": "*",
+    "@cloakfile/shared": "*"
   }
 }

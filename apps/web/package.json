@@ -1,5 +1,5 @@
 {
-  "name": "@sds/web",
+  "name": "@cloakfile/web",
   "version": "0.1.0",
   "private": true,
   "description": "React client: upload, category selection, review of detected information, and download.",
@@ -11,7 +11,7 @@
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
-    "@sds/shared": "*",
+    "@cloakfile/shared": "*",
     "react": "^19.3.0",
     "react-dom": "^19.3.0"
   },

@@ -1,4 +1,4 @@
-import type { RawDetection } from '@sds/shared';
+import type { RawDetection } from '@cloakfile/shared';
 import { findPhoneNumbersInText, type CountryCode } from 'libphonenumber-js';
 
 import type { DetectionInput, Detector } from '../types.js';

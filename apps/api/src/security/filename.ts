@@ -1,4 +1,4 @@
-import { FORMAT_EXTENSIONS, type DocumentFormat } from '@sds/shared';
+import { FORMAT_EXTENSIONS, type DocumentFormat } from '@cloakfile/shared';
 
 const UNSAFE_CHARACTERS = /[^A-Za-z0-9._-]/gu;
 const MAX_DISPLAY_LENGTH = 80;

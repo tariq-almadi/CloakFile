@@ -1,4 +1,4 @@
-import type { AnonymizedDetection, PlaceholderGroup } from '@sds/shared';
+import type { AnonymizedDetection, PlaceholderGroup } from '@cloakfile/shared';
 
 /**
  * Renders a placeholder token.

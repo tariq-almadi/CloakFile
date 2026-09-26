@@ -1,5 +1,5 @@
-import type { AnalysisResult } from '@sds/pipeline';
-import { CapacityExceededError, SessionNotFoundError } from '@sds/shared';
+import type { AnalysisResult } from '@cloakfile/pipeline';
+import { CapacityExceededError, SessionNotFoundError } from '@cloakfile/shared';
 import { describe, expect, it } from 'vitest';
 
 import { EphemeralSessionStore } from './session-store.js';

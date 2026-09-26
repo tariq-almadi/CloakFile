@@ -1,5 +1,5 @@
 {
-  "name": "@sds/pipeline",
+  "name": "@cloakfile/pipeline",
   "version": "0.1.0",
   "private": true,
   "description": "Composes detection, anonymization, document processing and verification into the sanitization flow.",
@@ -20,10 +20,10 @@
     "clean": "tsc -b --clean"
   },
   "dependencies": {
-    "@sds/anonymization": "*",
-    "@sds/detection": "*",
-    "@sds/document-processing": "*",
-    "@sds/shared": "*",
-    "@sds/verification": "*"
+    "@cloakfile/anonymization": "*",
+    "@cloakfile/detection": "*",
+    "@cloakfile/document-processing": "*",
+    "@cloakfile/shared": "*",
+    "@cloakfile/verification": "*"
   }
 }

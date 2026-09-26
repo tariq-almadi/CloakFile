@@ -73,7 +73,7 @@ sensitive data in it. Do not soften them into warnings.
 - `npm run verify` passes.
 - No `any`. Validate at boundaries instead — see `toStringArray` in
   `nlp-entity-detector.ts`.
-- Typed errors from `@sds/shared`. No swallowed exceptions; if you deliberately
+- Typed errors from `@cloakfile/shared`. No swallowed exceptions; if you deliberately
   discard one, say why in a comment.
 - New behaviour comes with a test. New detectors come with false-positive tests.
 - Comment the _why_, not the _what_.

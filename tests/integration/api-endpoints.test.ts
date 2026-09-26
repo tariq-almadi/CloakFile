@@ -1,6 +1,6 @@
-import { createApp } from '@sds/api/app';
-import { loadConfig } from '@sds/api/config';
-import type { AnalyzeResponse, CapabilitiesResponse, SanitizeResponse } from '@sds/shared';
+import { createApp } from '@cloakfile/api/app';
+import { loadConfig } from '@cloakfile/api/config';
+import type { AnalyzeResponse, CapabilitiesResponse, SanitizeResponse } from '@cloakfile/shared';
 import type { FastifyInstance } from 'fastify';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 

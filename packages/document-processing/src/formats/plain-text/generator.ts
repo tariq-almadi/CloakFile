@@ -4,7 +4,7 @@ import {
   type DocumentFormat,
   type GeneratedDocument,
   type SanitizationMode,
-} from '@sds/shared';
+} from '@cloakfile/shared';
 
 import type { DocumentGenerator, GenerationInput } from '../../types.js';
 

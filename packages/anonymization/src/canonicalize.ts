@@ -1,4 +1,4 @@
-import type { DetectionMetadata, PIIType } from '@sds/shared';
+import type { DetectionMetadata, PIIType } from '@cloakfile/shared';
 
 /**
  * Reduce a detected value to the key that decides whether two occurrences are

@@ -3,7 +3,7 @@ import type {
   GeneratedDocument,
   MaybePromise,
   VerificationReport,
-} from '@sds/shared';
+} from '@cloakfile/shared';
 
 export interface VerificationInput {
   /** The document we are about to hand back to the user. */

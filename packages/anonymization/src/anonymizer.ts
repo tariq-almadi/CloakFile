@@ -3,7 +3,7 @@ import {
   type AnonymizedDetection,
   type Detection,
   type PlaceholderGroup,
-} from '@sds/shared';
+} from '@cloakfile/shared';
 
 import { PlaceholderAllocator, bracketFormatter } from './placeholder-allocator.js';
 import type { AnonymizationOptions, AnonymizationResult } from './types.js';

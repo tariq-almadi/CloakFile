@@ -1,4 +1,4 @@
-import type { FormatCapabilities } from '@sds/shared';
+import type { FormatCapabilities } from '@cloakfile/shared';
 
 /**
  * Plain-text formats are the best case for this product: the text view IS the

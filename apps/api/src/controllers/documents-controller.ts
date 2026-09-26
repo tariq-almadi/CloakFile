@@ -1,11 +1,11 @@
-import { SanitizationPipeline } from '@sds/pipeline';
+import { SanitizationPipeline } from '@cloakfile/pipeline';
 import {
   InvalidInputError,
   analyzeOptionsSchema,
   sanitizeRequestSchema,
   type AnalyzeResponse,
   type SanitizeResponse,
-} from '@sds/shared';
+} from '@cloakfile/shared';
 
 import type { AppConfig } from '../config.js';
 import { toSanitizedFileName } from '../security/filename.js';
@@ -27,7 +27,7 @@ export interface UploadPayload {
  * Fastify, request objects or HTTP status codes. That makes the analyze /
  * sanitize flow testable directly, and it means the rule "no file processing in
  * controllers" is enforced one level further down — the controller does not
- * process files either, it delegates to `@sds/pipeline`.
+ * process files either, it delegates to `@cloakfile/pipeline`.
  */
 export class DocumentsController {
   readonly #sessions: EphemeralSessionStore;

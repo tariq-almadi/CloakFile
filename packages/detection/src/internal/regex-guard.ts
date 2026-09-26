@@ -1,4 +1,4 @@
-import { InvalidInputError, MAX_CUSTOM_PATTERN_LENGTH } from '@sds/shared';
+import { InvalidInputError, MAX_CUSTOM_PATTERN_LENGTH } from '@cloakfile/shared';
 
 /**
  * A quantified group whose body is itself quantified or alternated — `(a+)+`,
