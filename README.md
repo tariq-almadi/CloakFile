@@ -17,7 +17,7 @@ ticket, because the sensitive values are no longer in the file.
 > deliberately unimplemented. PDF output is **text, not a visual copy** of the
 > original — see [PDF support](#pdf-support). This has not had a security
 > review. See [Security limitations](#security-limitations) before using it
-> with real data.
+> with real data
 
 ---
 
