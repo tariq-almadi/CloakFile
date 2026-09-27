@@ -31,7 +31,7 @@ CloakFile replaces the characters completely
 | Mode               | What it means                                                     | Acceptable? |
 | ------------------ | ----------------------------------------------------------------- | ----------- |
 | `text-replacement` | Original characters are gone; a placeholder stands in their place | Yes         |
-| `content-removal`  | Original characters are gone entirely (metadata, annotations)     | Yes         |
+| `content-removal`  | Original characters are gone entirely (comments, annotations)     | Yes         |
 | `visual-redaction` | Pixels cover the text; the text is still extractable              | **No**      |
 
 
@@ -134,7 +134,7 @@ that is an outcome we tried to avoid but here is why we could not:
 
 
 2. **A page is only one of the places a value can be.** there is many more places text can hide in
-invisible OCR layer,comments, notes, metadata. a normal read would not be enough
+invisible OCR layer,comments, notes, a normal read would not be enough
 
 So instead of editing the uploaded PDF, we decided to pull text out of every one of those compartments
 and build a completly new PDF from scratch containing only the clean parsed text.
@@ -143,7 +143,6 @@ and build a completly new PDF from scratch containing only the clean parsed text
 | ---------------------------------- | ------------------------------------------------------------------------------- |
 | Text PDF, any fonts or positioning | Sanitized. But loses layout                                                      |
 | Form fields, annotations, comments | Text extracted, sanitized, then showed as labeled text                           |
-| Metadata, XMP, bookmarks           | Deleted, user is informed of their removal                                       |
 | Embedded files / attachments       | Deleted                                                                          |
 | Invisible OCR text layers          | Extracted and sanitized like any other text                                      |
 | **Scanned / image-only pages**     | **Refused.** No text to extract, so process is `inconclusive` and the download is blocked |
