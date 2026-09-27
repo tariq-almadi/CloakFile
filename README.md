@@ -13,12 +13,6 @@ His credit card is 4111 1111 1111 1111.         His credit card is [CREDIT_CARD_
 The result is safe to hand to an external AI service, a vendor, or a support
 ticket, removing any sensetive info from the file.
 
-> **Status: Phase 2.** TXT, CSV, JSON and PDF work end to end. DOCX is
-> deliberately unimplemented. PDF output is **text, not a visual copy** of the
-> original — see [PDF support](#pdf-support). This has not had a security
-> review. See [Security limitations](#security-limitations) before using it
-> with real data
-
 ---
 
 ## Core Principles
@@ -83,8 +77,6 @@ tests/
   fixtures/               Synthetic sample documents.
 docs/                     Architecture, security, threat model, development.
 ```
-
-Full detail: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
 ---
 
@@ -165,19 +157,16 @@ and build a completly new PDF from scratch containing only the clean parsed text
 - TXT, CSV, JSON and PDF end to end: upload → detect → replace → verify →
   download
 - Detects: email, phone (international, via libphonenumber-js), credit card
-  (Validated with Luhn Checksum), US SSN, IP address, URLs, custom regex 
+  (Validated with Luhn Checksum), US SSN, Canadian SIN number, IP address, URLs, custom regex 
   that you can apply, and names /organizations via compromise
 - Same value gets the same placeholder for consistency 
 
 
 ## What is intentionally not built
-
-- **DOCX** extraction and generation — registered, documented, and fails loudly
 - PDF layout preservation 
-- Address, government ID, bank account and date-of-birth detection — registered
-  as stubs that report themselves as unimplemented
 - OCR and scanned documents
-- Authentication, accounts, persistence, multi-instance deployment
+- Authentication, accounts, persistence, multi-file uploads
+- CSV files
 
 ---
 

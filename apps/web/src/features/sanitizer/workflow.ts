@@ -1,4 +1,10 @@
-import type { AnalyzeResponse, PIIType, SanitizeResponse } from '@cloakfile/shared';
+import type {
+  AnalyzeOptionsInput,
+  AnalyzeResponse,
+  CustomPatternInput,
+  PIIType,
+  SanitizeResponse,
+} from '@cloakfile/shared';
 
 /**
  * The steps the user moves through. Modelled explicitly so the UI renders from
@@ -11,6 +17,7 @@ export interface WorkflowState {
   readonly step: WorkflowStep;
   readonly file: File | null;
   readonly enabledTypes: readonly PIIType[];
+  readonly customPatterns: readonly CustomPatternInput[];
   readonly analysis: AnalyzeResponse | null;
   /** Placeholders the user unticked during review; these are left as-is. */
   readonly excludedPlaceholders: readonly string[];
@@ -22,6 +29,7 @@ export type WorkflowAction =
   | { type: 'file-selected'; file: File }
   | { type: 'file-cleared' }
   | { type: 'category-toggled'; piiType: PIIType }
+  | { type: 'custom-patterns-changed'; customPatterns: readonly CustomPatternInput[] }
   | { type: 'analysis-started' }
   | { type: 'analysis-succeeded'; analysis: AnalyzeResponse }
   | { type: 'placeholder-toggled'; placeholder: string }
@@ -52,6 +60,7 @@ export const initialWorkflowState: WorkflowState = {
   step: 'select',
   file: null,
   enabledTypes: DEFAULT_ENABLED_TYPES,
+  customPatterns: [],
   analysis: null,
   excludedPlaceholders: [],
   result: null,
@@ -68,10 +77,19 @@ export function workflowReducer(state: WorkflowState, action: WorkflowAction): W
   switch (action.type) {
     case 'file-selected':
       // Choosing a new file invalidates any previous analysis.
-      return { ...initialWorkflowState, enabledTypes: state.enabledTypes, file: action.file };
+      return {
+        ...initialWorkflowState,
+        enabledTypes: state.enabledTypes,
+        customPatterns: state.customPatterns,
+        file: action.file,
+      };
 
     case 'file-cleared':
-      return { ...initialWorkflowState, enabledTypes: state.enabledTypes };
+      return {
+        ...initialWorkflowState,
+        enabledTypes: state.enabledTypes,
+        customPatterns: state.customPatterns,
+      };
 
     case 'category-toggled': {
       const isEnabled = state.enabledTypes.includes(action.piiType);
@@ -87,6 +105,16 @@ export function workflowReducer(state: WorkflowState, action: WorkflowAction): W
         error: null,
       };
     }
+
+    case 'custom-patterns-changed':
+      return {
+        ...state,
+        customPatterns: action.customPatterns,
+        step: 'select',
+        analysis: null,
+        result: null,
+        error: null,
+      };
 
     case 'analysis-started':
       return { ...state, step: 'analyzing', error: null, analysis: null, result: null };
@@ -130,7 +158,22 @@ export function workflowReducer(state: WorkflowState, action: WorkflowAction): W
 }
 
 export function canAnalyze(state: WorkflowState): boolean {
-  return state.file !== null && state.enabledTypes.length > 0 && state.step === 'select';
+  return (
+    state.file !== null &&
+    (state.enabledTypes.length > 0 || state.customPatterns.length > 0) &&
+    state.step === 'select'
+  );
+}
+
+export function buildAnalyzeOptions(
+  state: Pick<WorkflowState, 'enabledTypes' | 'customPatterns'>,
+): AnalyzeOptionsInput {
+  const enabledTypes = [...state.enabledTypes];
+  if (state.customPatterns.length > 0 && !enabledTypes.includes('CUSTOM')) {
+    enabledTypes.push('CUSTOM');
+  }
+
+  return { enabledTypes, customPatterns: state.customPatterns };
 }
 
 export function canSanitize(state: WorkflowState): boolean {

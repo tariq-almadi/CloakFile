@@ -1,9 +1,14 @@
 import { useCallback, useEffect, useReducer, useState } from 'react';
 
-import type { CapabilitiesResponse, PIIType } from '@cloakfile/shared';
+import type { CapabilitiesResponse, CustomPatternInput, PIIType } from '@cloakfile/shared';
 
 import { ApiError, apiClient } from '../../lib/api-client.js';
-import { initialWorkflowState, workflowReducer, type WorkflowState } from './workflow.js';
+import {
+  buildAnalyzeOptions,
+  initialWorkflowState,
+  workflowReducer,
+  type WorkflowState,
+} from './workflow.js';
 
 /**
  * Callbacks are declared as properties rather than methods because they are
@@ -15,6 +20,7 @@ export interface SanitizerWorkflow {
   readonly capabilities: CapabilitiesResponse | null;
   readonly selectFile: (file: File) => void;
   readonly toggleCategory: (piiType: PIIType) => void;
+  readonly setCustomPatterns: (customPatterns: readonly CustomPatternInput[]) => void;
   readonly togglePlaceholder: (placeholder: string) => void;
   readonly analyze: () => Promise<void>;
   readonly sanitize: () => Promise<void>;
@@ -53,12 +59,15 @@ export function useSanitizerWorkflow(): SanitizerWorkflow {
   }, []);
 
   const analyze = useCallback(async (): Promise<void> => {
-    const { file, enabledTypes } = state;
+    const { file, enabledTypes, customPatterns } = state;
     if (file === null) return;
 
     dispatch({ type: 'analysis-started' });
     await run(async () => {
-      const analysis = await apiClient.analyze(file, { enabledTypes: [...enabledTypes] });
+      const analysis = await apiClient.analyze(
+        file,
+        buildAnalyzeOptions({ enabledTypes, customPatterns }),
+      );
       dispatch({ type: 'analysis-succeeded', analysis });
     });
   }, [run, state]);
@@ -94,6 +103,9 @@ export function useSanitizerWorkflow(): SanitizerWorkflow {
     }, []),
     toggleCategory: useCallback((piiType: PIIType) => {
       dispatch({ type: 'category-toggled', piiType });
+    }, []),
+    setCustomPatterns: useCallback((customPatterns: readonly CustomPatternInput[]) => {
+      dispatch({ type: 'custom-patterns-changed', customPatterns });
     }, []),
     togglePlaceholder: useCallback((placeholder: string) => {
       dispatch({ type: 'placeholder-toggled', placeholder });

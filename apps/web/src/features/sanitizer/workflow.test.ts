@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import {
   analysisWarningsBlockRelease,
+  buildAnalyzeOptions,
   canSanitize,
   initialWorkflowState,
   workflowReducer,
@@ -59,6 +60,40 @@ describe('workflow reducer', () => {
     });
 
     expect(next.enabledTypes).toContain('IP_ADDRESS');
+  });
+
+  it('keeps custom patterns across a file change', () => {
+    const withPattern = workflowReducer(initialWorkflowState, {
+      type: 'custom-patterns-changed',
+      customPatterns: [{ name: 'CASE_ID', pattern: '\\bCASE-\\d{6}\\b', ignoreCase: false }],
+    });
+    const next = workflowReducer(withPattern, {
+      type: 'file-selected',
+      file: new File(['hello'], 'notes.txt'),
+    });
+
+    expect(next.customPatterns).toEqual(withPattern.customPatterns);
+  });
+
+  it('includes the custom category and patterns in analyze options', () => {
+    const customPatterns = [{ name: 'CASE_ID', pattern: 'CASE-\\d+', ignoreCase: true }];
+    const options = buildAnalyzeOptions({
+      enabledTypes: ['EMAIL'],
+      customPatterns,
+    });
+
+    expect(options.enabledTypes).toEqual(['EMAIL', 'CUSTOM']);
+    expect(options.customPatterns).toEqual(customPatterns);
+  });
+
+  it('invalidates analysis when custom patterns change', () => {
+    const next = workflowReducer(stateWithAnalysis(), {
+      type: 'custom-patterns-changed',
+      customPatterns: [{ name: 'CASE_ID', pattern: 'CASE-\\d+', ignoreCase: false }],
+    });
+
+    expect(next.analysis).toBeNull();
+    expect(next.step).toBe('select');
   });
 
   it('invalidates the analysis when the selected categories change', () => {

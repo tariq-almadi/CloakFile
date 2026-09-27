@@ -62,7 +62,9 @@ export function SanitizerPage(): JSX.Element {
         <CategorySelector
           enabledTypes={state.enabledTypes}
           coverage={capabilities?.detection ?? []}
+          customPatterns={state.customPatterns}
           onToggle={workflow.toggleCategory}
+          onCustomPatternsChange={workflow.setCustomPatterns}
           locked={!hasFile}
         />
 
