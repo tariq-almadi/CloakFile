@@ -35,4 +35,28 @@ describe('residualVariantMatches', () => {
       ),
     ).toBe(true);
   });
+
+  it('does not treat an org name as residual inside a kept email domain', () => {
+    const haystack = normalizeHaystack(
+      'email: aris.thorne@apex-holdings.org direct line: [PHONE_001]',
+    );
+    const value = 'Apex Holdings';
+
+    expect(
+      residualVariants(value).some((variant) =>
+        residualVariantMatches(haystack, variant, value),
+      ),
+    ).toBe(false);
+  });
+
+  it('still finds a removed org name as its own phrase', () => {
+    const haystack = normalizeHaystack('Filed by Apex Holdings yesterday.');
+    const value = 'Apex Holdings';
+
+    expect(
+      residualVariants(value).some((variant) =>
+        residualVariantMatches(haystack, variant, value),
+      ),
+    ).toBe(true);
+  });
 });

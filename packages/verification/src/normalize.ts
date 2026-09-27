@@ -53,9 +53,14 @@ export function residualVariantMatches(
   }
 
   const valueHasDigit = /\d/u.test(originalValue);
-  const valueHasSeparator = /[\s.\-()_/]/u.test(originalValue);
 
-  if (valueHasDigit || valueHasSeparator) {
+  // Digit-bearing values (cards, phones, IDs) need separator-insensitive search
+  // so `4111 1111…` still matches `4111111111111111`.
+  //
+  // Multi-word names/orgs must NOT use separatorless search: "Apex Holdings"
+  // would otherwise match inside an intentionally kept email like
+  // `aris.thorne@apex-holdings.org`.
+  if (valueHasDigit) {
     return (
       haystack.lowered.includes(variant) ||
       haystack.collapsed.includes(variant) ||

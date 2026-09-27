@@ -60,6 +60,8 @@ export class NlpEntityDetector implements Detector {
       // One or two characters is noise; it would match half the document.
       if (surface.length < 3 || surface.includes('\u001f') || seen.has(surface)) continue;
       if (isHeadingPhrase(surface)) continue;
+      // PDF/NLP artifacts: section titles glued across newlines or ampersands.
+      if (type === 'ORGANIZATION' && !isPlausibleOrganization(surface)) continue;
       seen.add(surface);
 
       for (const occurrence of findLiteralOccurrences(text, surface)) {
@@ -120,4 +122,13 @@ function trimSurface(raw: string): string {
       .replace(/^[^\p{L}\p{N}]+/u, '')
       .replace(/[^\p{L}\p{N}]+$/u, ''),
   );
+}
+
+/** Drop NLP org hits that are clearly section titles, not company names. */
+function isPlausibleOrganization(surface: string): boolean {
+  if (/[\n\r]|\s{2,}/u.test(surface)) return false;
+  if (surface.includes('&')) return false;
+  const words = surface.split(/\s+/u).filter((word) => word.length > 0);
+  if (words.length < 2 || words.length > 4) return false;
+  return true;
 }
