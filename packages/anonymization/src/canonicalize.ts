@@ -65,12 +65,14 @@ export function canonicalizeValue(
  * The label used inside the placeholder token.
  *
  * Custom patterns carry their own name so the output reads `[EMPLOYEE_ID_001]`
- * rather than an undifferentiated `[CUSTOM_001]`.
+ * rather than an undifferentiated `[CUSTOM_001]`. SSN maps to `SIN` so Canadian
+ * documents read `[SIN_001]` instead of the US-flavoured acronym.
  */
 export function placeholderLabel(type: PIIType, metadata?: DetectionMetadata): string {
   if (type === 'CUSTOM') {
     const patternName = metadata?.['patternName'];
     if (typeof patternName === 'string' && patternName.length > 0) return patternName;
   }
+  if (type === 'SSN') return 'SIN';
   return type;
 }
