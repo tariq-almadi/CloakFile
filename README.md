@@ -101,26 +101,6 @@ npm install          # installs every workspace
 cp .env.example .env # optional; it runs fine on defaults
 npm run dev          # starts API on 3001 and web on 5173
 ```
-
-There are no API keys to obtain. That is a deliberate move.
-
-## Environment setup
-
-Everything has a working default, so `.env` is optional for local development.
-Read [.env.example](.env.example) — each variable documents what it protects
-against. The values most worth knowing:
-
-| Variable                           | Default                 | Purpose                              |
-| ---------------------------------- | ----------------------- | ------------------------------------ |
-| `API_PORT`                         | `3001`                  | API listen port                      |
-| `API_CORS_ORIGINS`                 | `http://127.0.0.1:5173,http://localhost:5173` | Comma-separated allowlist. Never `*` |
-| `UPLOAD_MAX_FILE_BYTES`            | `10485760` (10 MiB)     | Bounds per-request memory            |
-| `SESSION_TTL_SECONDS`              | `900`                   | How long a document stays in memory  |
-| `SANITIZATION_STRICT_VERIFICATION` | `true`                  | Refuse to release unverified output  |
-
-Invalid configuration fails at startup rather than falling back to a permissive
-default.
-
 ---
 
 ## Useful commands

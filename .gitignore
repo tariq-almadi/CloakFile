@@ -10,18 +10,17 @@ build/
 coverage/
 .vitest/
 
-# Environment files - NEVER commit real secrets
+# Environment files 
 .env
 .env.*
 !.env.example
 
-# Logs (may inadvertently contain document contents - never commit)
+# Logs 
 *.log
 logs/
 npm-debug.log*
 
-# Runtime scratch space for document processing.
-# Nothing here is ever safe to commit: it can contain uploaded user documents.
+# Runtime space for document processing.
 tmp/
 .tmp/
 uploads/
