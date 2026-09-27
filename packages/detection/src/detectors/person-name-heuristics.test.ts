@@ -56,6 +56,17 @@ describe('findPersonSequences', () => {
     expect(values.some((value) => value.includes('Victoria Sterling'))).toBe(true);
   });
 
+  it('does not treat form labels or org/place cells as people', () => {
+    const text =
+      'Credit Card\u001fWeb Link\u001fNetwork Infrastructure\u001fChase Manhattan Bank\u001fAssociated Personnel';
+    const values = findPersonSequences(text).map((span) => span.value);
+    expect(values).not.toContain('Credit Card');
+    expect(values).not.toContain('Web Link');
+    expect(values).not.toContain('Network Infrastructure');
+    expect(values).not.toContain('Chase Manhattan Bank');
+    expect(values).not.toContain('Associated Personnel');
+  });
+
   it('finds paired given and family names compromise skips', () => {
     const text = 'contributions from Guillermo Del Toro Jr. and Chinedu Okafor demonstrate';
     const values = findPersonSequences(text).map((span) => span.value);

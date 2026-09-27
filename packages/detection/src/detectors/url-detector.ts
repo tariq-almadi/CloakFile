@@ -5,8 +5,13 @@ import type { DetectionInput, Detector } from '../types.js';
 /**
  * Only explicitly schemed URLs. Bare-domain matching (`acme.com`) produces far
  * too many false positives in prose to be worth it at this stage.
+ *
+ * Stop at whitespace *and* at `\u001f` (the PDF block separator we inject
+ * during extraction). Otherwise a URL glued to the next cell — e.g.
+ * `https://example.com/account\u001fWeb Link` — is swallowed as one token,
+ * loses the overlap fight with the following label, and leaks in the output.
  */
-const URL_PATTERN = /https?:\/\/[^\s<>"'`]{1,2000}/gu;
+const URL_PATTERN = /https?:\/\/[^\s\u001f<>"'`]{1,2000}/gu;
 
 /** Trailing punctuation belongs to the sentence, not the URL. */
 const TRAILING_PUNCTUATION = new Set(['.', ',', ';', ':', '!', '?', ')', ']', '}', '>', '"', "'"]);
