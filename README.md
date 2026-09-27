@@ -153,7 +153,7 @@ and build a completly new PDF from scratch containing only the clean parsed text
 
 ## What actually works right now
 
-- TXT, CSV, JSON and PDF end to end: upload → detect → replace → verify →
+- TXT,DOCX and PDF end to end: upload → detect → replace → verify →
   download
 - Detects: email, phone (international, via libphonenumber-js), credit card
   (Validated with Luhn Checksum), US SSN, Canadian SIN number, IP address, URLs, custom regex 
