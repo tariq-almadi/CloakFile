@@ -78,7 +78,7 @@ export function DetectionList({
                 <span className="min-w-0 flex-1">
                   <span className="flex flex-wrap items-center gap-2">
                     <span className="text-[0.7rem] font-semibold uppercase tracking-wide text-mist-dim">
-                      {categoryTitle(group.type)}
+                      {categoryTitle(group.type, group.metadata)}
                     </span>
                     {group.occurrences > 1 && (
                       <span className="cf-pill bg-white/5 text-mist-dim">

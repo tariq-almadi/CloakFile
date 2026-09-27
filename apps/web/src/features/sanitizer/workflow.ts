@@ -1,10 +1,11 @@
 import type {
   AnalyzeOptionsInput,
   AnalyzeResponse,
-  CustomPatternInput,
   PIIType,
   SanitizeResponse,
 } from '@cloakfile/shared';
+
+import { blacklistToCustomPatterns, type BlacklistWord } from './word-blacklist.js';
 
 /**
  * The steps the user moves through. Modelled explicitly so the UI renders from
@@ -17,7 +18,7 @@ export interface WorkflowState {
   readonly step: WorkflowStep;
   readonly file: File | null;
   readonly enabledTypes: readonly PIIType[];
-  readonly customPatterns: readonly CustomPatternInput[];
+  readonly blacklistWords: readonly BlacklistWord[];
   readonly analysis: AnalyzeResponse | null;
   /** Placeholders the user unticked during review; these are left as-is. */
   readonly excludedPlaceholders: readonly string[];
@@ -29,7 +30,7 @@ export type WorkflowAction =
   | { type: 'file-selected'; file: File }
   | { type: 'file-cleared' }
   | { type: 'category-toggled'; piiType: PIIType }
-  | { type: 'custom-patterns-changed'; customPatterns: readonly CustomPatternInput[] }
+  | { type: 'blacklist-changed'; blacklistWords: readonly BlacklistWord[] }
   | { type: 'analysis-started' }
   | { type: 'analysis-succeeded'; analysis: AnalyzeResponse }
   | { type: 'placeholder-toggled'; placeholder: string }
@@ -60,7 +61,7 @@ export const initialWorkflowState: WorkflowState = {
   step: 'select',
   file: null,
   enabledTypes: DEFAULT_ENABLED_TYPES,
-  customPatterns: [],
+  blacklistWords: [],
   analysis: null,
   excludedPlaceholders: [],
   result: null,
@@ -80,7 +81,7 @@ export function workflowReducer(state: WorkflowState, action: WorkflowAction): W
       return {
         ...initialWorkflowState,
         enabledTypes: state.enabledTypes,
-        customPatterns: state.customPatterns,
+        blacklistWords: state.blacklistWords,
         file: action.file,
       };
 
@@ -88,7 +89,7 @@ export function workflowReducer(state: WorkflowState, action: WorkflowAction): W
       return {
         ...initialWorkflowState,
         enabledTypes: state.enabledTypes,
-        customPatterns: state.customPatterns,
+        blacklistWords: state.blacklistWords,
       };
 
     case 'category-toggled': {
@@ -106,10 +107,10 @@ export function workflowReducer(state: WorkflowState, action: WorkflowAction): W
       };
     }
 
-    case 'custom-patterns-changed':
+    case 'blacklist-changed':
       return {
         ...state,
-        customPatterns: action.customPatterns,
+        blacklistWords: action.blacklistWords,
         step: 'select',
         analysis: null,
         result: null,
@@ -160,20 +161,21 @@ export function workflowReducer(state: WorkflowState, action: WorkflowAction): W
 export function canAnalyze(state: WorkflowState): boolean {
   return (
     state.file !== null &&
-    (state.enabledTypes.length > 0 || state.customPatterns.length > 0) &&
+    (state.enabledTypes.length > 0 || state.blacklistWords.length > 0) &&
     state.step === 'select'
   );
 }
 
 export function buildAnalyzeOptions(
-  state: Pick<WorkflowState, 'enabledTypes' | 'customPatterns'>,
+  state: Pick<WorkflowState, 'enabledTypes' | 'blacklistWords'>,
 ): AnalyzeOptionsInput {
+  const customPatterns = blacklistToCustomPatterns(state.blacklistWords);
   const enabledTypes = [...state.enabledTypes];
-  if (state.customPatterns.length > 0 && !enabledTypes.includes('CUSTOM')) {
+  if (customPatterns.length > 0 && !enabledTypes.includes('CUSTOM')) {
     enabledTypes.push('CUSTOM');
   }
 
-  return { enabledTypes, customPatterns: state.customPatterns };
+  return { enabledTypes, customPatterns };
 }
 
 export function canSanitize(state: WorkflowState): boolean {

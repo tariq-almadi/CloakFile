@@ -218,6 +218,32 @@ describe('sanitization round trip · pdf', () => {
     expect(outputText.split('[EMAIL_001]').length - 1).toBe(3);
   });
 
+  it('redacts a user-blocked word in a PDF the same way as in text', async () => {
+    const bytes = await simpleTextPdf();
+    const pipeline = new SanitizationPipeline();
+    const analysis = await pipeline.analyze({
+      bytes,
+      format: 'pdf',
+      options: {
+        enabledTypes: ['CUSTOM'],
+        customPatterns: [{ name: 'BLOCKED_NAME', pattern: '\\bJohn\\s+Doe\\b', ignoreCase: true }],
+        defaultRegion: 'CA',
+      },
+    });
+
+    expect(analysis.groups.some((group) => group.type === 'CUSTOM')).toBe(true);
+
+    const result = await pipeline.sanitize({ originalBytes: bytes, analysis });
+    const output = await createDefaultDocumentRegistry().extract({
+      bytes: result.generated.bytes,
+      format: 'pdf',
+    });
+
+    expect(result.verification.status).toBe('pass');
+    expect(output.text).not.toMatch(/John\s+Doe/iu);
+    expect(output.text).toContain('[BLOCKED_NAME_001]');
+  });
+
   it('shows found values in the client-facing groups for review', async () => {
     const { analysis } = await sanitizePdf(hostilePdf());
 

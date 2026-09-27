@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useReducer, useState } from 'react';
 
-import type { CapabilitiesResponse, CustomPatternInput, PIIType } from '@cloakfile/shared';
+import type { CapabilitiesResponse, PIIType } from '@cloakfile/shared';
 
 import { ApiError, apiClient } from '../../lib/api-client.js';
 import {
@@ -9,6 +9,7 @@ import {
   workflowReducer,
   type WorkflowState,
 } from './workflow.js';
+import type { BlacklistWord } from './word-blacklist.js';
 
 /**
  * Callbacks are declared as properties rather than methods because they are
@@ -20,7 +21,7 @@ export interface SanitizerWorkflow {
   readonly capabilities: CapabilitiesResponse | null;
   readonly selectFile: (file: File) => void;
   readonly toggleCategory: (piiType: PIIType) => void;
-  readonly setCustomPatterns: (customPatterns: readonly CustomPatternInput[]) => void;
+  readonly setBlacklistWords: (entries: readonly BlacklistWord[]) => void;
   readonly togglePlaceholder: (placeholder: string) => void;
   readonly analyze: () => Promise<void>;
   readonly sanitize: () => Promise<void>;
@@ -59,14 +60,14 @@ export function useSanitizerWorkflow(): SanitizerWorkflow {
   }, []);
 
   const analyze = useCallback(async (): Promise<void> => {
-    const { file, enabledTypes, customPatterns } = state;
+    const { file, enabledTypes, blacklistWords } = state;
     if (file === null) return;
 
     dispatch({ type: 'analysis-started' });
     await run(async () => {
       const analysis = await apiClient.analyze(
         file,
-        buildAnalyzeOptions({ enabledTypes, customPatterns }),
+        buildAnalyzeOptions({ enabledTypes, blacklistWords }),
       );
       dispatch({ type: 'analysis-succeeded', analysis });
     });
@@ -104,8 +105,8 @@ export function useSanitizerWorkflow(): SanitizerWorkflow {
     toggleCategory: useCallback((piiType: PIIType) => {
       dispatch({ type: 'category-toggled', piiType });
     }, []),
-    setCustomPatterns: useCallback((customPatterns: readonly CustomPatternInput[]) => {
-      dispatch({ type: 'custom-patterns-changed', customPatterns });
+    setBlacklistWords: useCallback((blacklistWords: readonly BlacklistWord[]) => {
+      dispatch({ type: 'blacklist-changed', blacklistWords });
     }, []),
     togglePlaceholder: useCallback((placeholder: string) => {
       dispatch({ type: 'placeholder-toggled', placeholder });

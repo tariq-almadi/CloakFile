@@ -62,34 +62,36 @@ describe('workflow reducer', () => {
     expect(next.enabledTypes).toContain('IP_ADDRESS');
   });
 
-  it('keeps custom patterns across a file change', () => {
-    const withPattern = workflowReducer(initialWorkflowState, {
-      type: 'custom-patterns-changed',
-      customPatterns: [{ name: 'CASE_ID', pattern: '\\bCASE-\\d{6}\\b', ignoreCase: false }],
+  it('keeps blacklist words across a file change', () => {
+    const withWords = workflowReducer(initialWorkflowState, {
+      type: 'blacklist-changed',
+      blacklistWords: [{ word: 'Project Nightfall', ignoreCase: true }],
     });
-    const next = workflowReducer(withPattern, {
+    const next = workflowReducer(withWords, {
       type: 'file-selected',
       file: new File(['hello'], 'notes.txt'),
     });
 
-    expect(next.customPatterns).toEqual(withPattern.customPatterns);
+    expect(next.blacklistWords).toEqual(withWords.blacklistWords);
   });
 
-  it('includes the custom category and patterns in analyze options', () => {
-    const customPatterns = [{ name: 'CASE_ID', pattern: 'CASE-\\d+', ignoreCase: true }];
+  it('includes CUSTOM and escaped patterns in analyze options', () => {
     const options = buildAnalyzeOptions({
       enabledTypes: ['EMAIL'],
-      customPatterns,
+      blacklistWords: [{ word: 'Project Nightfall', ignoreCase: true }],
     });
 
     expect(options.enabledTypes).toEqual(['EMAIL', 'CUSTOM']);
-    expect(options.customPatterns).toEqual(customPatterns);
+    expect(options.customPatterns).toHaveLength(1);
+    expect(options.customPatterns[0]?.name).toBe('PROJECT_NIGHTFALL');
+    expect(options.customPatterns[0]?.pattern).toBe('\\bProject\\s+Nightfall\\b');
+    expect(options.customPatterns[0]?.ignoreCase).toBe(true);
   });
 
-  it('invalidates analysis when custom patterns change', () => {
+  it('invalidates analysis when the blacklist changes', () => {
     const next = workflowReducer(stateWithAnalysis(), {
-      type: 'custom-patterns-changed',
-      customPatterns: [{ name: 'CASE_ID', pattern: 'CASE-\\d+', ignoreCase: false }],
+      type: 'blacklist-changed',
+      blacklistWords: [{ word: 'secret', ignoreCase: true }],
     });
 
     expect(next.analysis).toBeNull();

@@ -58,12 +58,22 @@ export const CATEGORY_COPY: Readonly<
     example: 'e.g. https://example.com/account',
   },
   CUSTOM: {
-    title: 'Custom patterns',
-    example: 'Patterns you define yourself',
+    title: 'Blocked words',
+    example: 'Words and phrases you add yourself',
   },
 };
 
 /** Friendly titles for detection review rows. */
-export function categoryTitle(type: PIIType): string {
+export function categoryTitle(
+  type: PIIType,
+  metadata?: Readonly<Record<string, string | number | boolean>>,
+): string {
+  if (type === 'CUSTOM') {
+    const patternName = metadata?.['patternName'];
+    if (typeof patternName === 'string' && patternName.length > 0) {
+      return patternName.replace(/_/gu, ' ');
+    }
+    return 'Blocked word';
+  }
   return CATEGORY_COPY[type].title;
 }

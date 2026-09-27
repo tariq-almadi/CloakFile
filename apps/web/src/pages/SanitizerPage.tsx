@@ -62,9 +62,9 @@ export function SanitizerPage(): JSX.Element {
         <CategorySelector
           enabledTypes={state.enabledTypes}
           coverage={capabilities?.detection ?? []}
-          customPatterns={state.customPatterns}
+          blacklistWords={state.blacklistWords}
           onToggle={workflow.toggleCategory}
-          onCustomPatternsChange={workflow.setCustomPatterns}
+          onBlacklistChange={workflow.setBlacklistWords}
           locked={!hasFile}
         />
 
@@ -80,9 +80,13 @@ export function SanitizerPage(): JSX.Element {
             >
               {state.step === 'analyzing' ? 'Searching…' : 'Find sensitive info'}
             </button>
-            {state.step === 'select' && state.enabledTypes.length === 0 && (
-              <p className="text-sm text-mist-dim">Turn on at least one category above.</p>
-            )}
+            {state.step === 'select' &&
+              state.enabledTypes.length === 0 &&
+              state.blacklistWords.length === 0 && (
+                <p className="text-sm text-mist-dim">
+                  Turn on a category above, or add a blocked word.
+                </p>
+              )}
           </div>
         )}
 
