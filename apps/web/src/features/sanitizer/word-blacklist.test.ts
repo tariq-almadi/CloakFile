@@ -2,8 +2,9 @@ import { describe, expect, it } from 'vitest';
 
 import {
   blacklistToCustomPatterns,
+  DEFAULT_REDACTION_TAG,
   escapeRegexLiteral,
-  labelFromWord,
+  normalizeRedactionTag,
   wordToSearchPattern,
 } from './word-blacklist.js';
 
@@ -17,21 +18,26 @@ describe('word blacklist helpers', () => {
     expect(wordToSearchPattern('Project Nightfall')).toBe('\\bProject\\s+Nightfall\\b');
   });
 
-  it('builds unique UPPER_SNAKE labels', () => {
-    expect(labelFromWord('Project Nightfall', [])).toBe('PROJECT_NIGHTFALL');
-    expect(labelFromWord('Project Nightfall', ['PROJECT_NIGHTFALL'])).toBe('PROJECT_NIGHTFALL_2');
-    expect(labelFromWord('123 secret', [])).toBe('WORD_123_SECRET');
+  it('normalizes replacement tags to UPPER_SNAKE', () => {
+    expect(normalizeRedactionTag('')).toBe(DEFAULT_REDACTION_TAG);
+    expect(normalizeRedactionTag('  hidden  ')).toBe('HIDDEN');
+    expect(normalizeRedactionTag('my tag')).toBe('MY_TAG');
+    expect(normalizeRedactionTag('123')).toBe('TAG_123');
   });
 
-  it('converts blacklist entries into API custom patterns', () => {
+  it('uses REDACTED (or a chosen tag) instead of the blocked word as the label', () => {
     const patterns = blacklistToCustomPatterns([
-      { word: 'CONFIDENTIAL', ignoreCase: true },
-      { word: 'emp-id', ignoreCase: false },
+      { word: 'audit', ignoreCase: true },
+      { word: 'CONFIDENTIAL', ignoreCase: false },
     ]);
 
     expect(patterns).toEqual([
-      { name: 'CONFIDENTIAL', pattern: '\\bCONFIDENTIAL\\b', ignoreCase: true },
-      { name: 'EMP_ID', pattern: '\\bemp-id\\b', ignoreCase: false },
+      { name: 'REDACTED', pattern: '\\baudit\\b', ignoreCase: true },
+      { name: 'REDACTED', pattern: '\\bCONFIDENTIAL\\b', ignoreCase: false },
     ]);
+
+    expect(
+      blacklistToCustomPatterns([{ word: 'audit', ignoreCase: true }], 'HIDDEN'),
+    ).toEqual([{ name: 'HIDDEN', pattern: '\\baudit\\b', ignoreCase: true }]);
   });
 });

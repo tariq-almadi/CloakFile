@@ -218,7 +218,12 @@ function unreadableContentCheck({ unreadable }: VerificationInput): Verification
 }
 
 function findResidual(text: string, { applied, skipped }: VerificationInput): readonly string[] {
-  const haystack = normalizeHaystack(maskKeptValues(text, skipped));
+  // Mask kept values and applied placeholders before searching. Without the
+  // latter, a blocked word like "audit" replaced with `[AUDIT_001]` (or any
+  // label that embeds the original token) would falsely fail residual checks.
+  const haystack = normalizeHaystack(
+    maskAppliedPlaceholders(maskKeptValues(text, skipped), applied),
+  );
   const offending = new Set<string>();
 
   for (const detection of applied) {
@@ -233,6 +238,24 @@ function findResidual(text: string, { applied, skipped }: VerificationInput): re
   }
 
   return [...offending].sort((a, b) => a.localeCompare(b));
+}
+
+/**
+ * Blank out placeholders we intentionally wrote into the output.
+ *
+ * Residual search must not treat the replacement token itself as a leftover
+ * original value when the label happens to contain that value (audit → AUDIT).
+ */
+function maskAppliedPlaceholders(
+  text: string,
+  applied: VerificationInput['applied'],
+): string {
+  let masked = text;
+  for (const detection of applied) {
+    if (detection.placeholder.length === 0) continue;
+    masked = masked.split(detection.placeholder).join(' ');
+  }
+  return masked;
 }
 
 /**

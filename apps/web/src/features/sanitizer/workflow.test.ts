@@ -79,13 +79,37 @@ describe('workflow reducer', () => {
     const options = buildAnalyzeOptions({
       enabledTypes: ['EMAIL'],
       blacklistWords: [{ word: 'Project Nightfall', ignoreCase: true }],
+      redactionTag: 'REDACTED',
     });
 
     expect(options.enabledTypes).toEqual(['EMAIL', 'CUSTOM']);
     expect(options.customPatterns).toHaveLength(1);
-    expect(options.customPatterns[0]?.name).toBe('PROJECT_NIGHTFALL');
-    expect(options.customPatterns[0]?.pattern).toBe('\\bProject\\s+Nightfall\\b');
-    expect(options.customPatterns[0]?.ignoreCase).toBe(true);
+    expect(options.customPatterns?.[0]?.name).toBe('REDACTED');
+    expect(options.customPatterns?.[0]?.pattern).toBe('\\bProject\\s+Nightfall\\b');
+    expect(options.customPatterns?.[0]?.ignoreCase).toBe(true);
+  });
+
+  it('uses a custom redaction tag for blocked-word placeholders', () => {
+    const options = buildAnalyzeOptions({
+      enabledTypes: ['EMAIL'],
+      blacklistWords: [{ word: 'audit', ignoreCase: true }],
+      redactionTag: 'HIDDEN',
+    });
+
+    expect(options.customPatterns?.[0]?.name).toBe('HIDDEN');
+  });
+
+  it('keeps the redaction tag across a file change', () => {
+    const withTag = workflowReducer(initialWorkflowState, {
+      type: 'redaction-tag-changed',
+      redactionTag: 'HIDDEN',
+    });
+    const next = workflowReducer(withTag, {
+      type: 'file-selected',
+      file: new File(['hello'], 'notes.txt'),
+    });
+
+    expect(next.redactionTag).toBe('HIDDEN');
   });
 
   it('invalidates analysis when the blacklist changes', () => {

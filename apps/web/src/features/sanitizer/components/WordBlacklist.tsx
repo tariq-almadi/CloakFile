@@ -2,11 +2,17 @@ import { useState, type FormEvent, type JSX, type KeyboardEvent } from 'react';
 
 import { MAX_CUSTOM_PATTERNS } from '@cloakfile/shared';
 
-import type { BlacklistWord } from '../word-blacklist.js';
+import {
+  DEFAULT_REDACTION_TAG,
+  normalizeRedactionTag,
+  type BlacklistWord,
+} from '../word-blacklist.js';
 
 interface WordBlacklistProps {
   readonly entries: readonly BlacklistWord[];
   readonly onChange: (entries: readonly BlacklistWord[]) => void;
+  readonly redactionTag: string;
+  readonly onRedactionTagChange: (tag: string) => void;
   readonly locked?: boolean;
 }
 
@@ -15,10 +21,14 @@ interface WordBlacklistProps {
  *
  * Users type words they want gone; we turn them into safe regex patterns for
  * the existing custom-pattern detector so TXT, PDF and DOCX all behave the same.
+ * Replacement tags default to REDACTED so the clean file does not re-embed the
+ * blocked word as its own label.
  */
 export function WordBlacklist({
   entries,
   onChange,
+  redactionTag,
+  onRedactionTagChange,
   locked = false,
 }: WordBlacklistProps): JSX.Element {
   const [draft, setDraft] = useState('');
@@ -31,6 +41,7 @@ export function WordBlacklist({
     (entry) => entry.word.toLowerCase() === trimmed.toLowerCase(),
   );
   const canAdd = !locked && !atLimit && trimmed.length > 0 && !duplicate;
+  const previewTag = normalizeRedactionTag(redactionTag);
 
   function addWord(): void {
     if (!canAdd) {
@@ -120,6 +131,30 @@ export function WordBlacklist({
             disabled={locked || atLimit}
           />
           Ignore letter case
+        </label>
+
+        <label className="flex flex-col gap-1.5 text-sm text-mist">
+          <span className="font-medium text-snow">Replacement tag</span>
+          <span className="text-xs text-mist-dim">
+            Blocked words become [{previewTag}_001] in the clean file. Leave blank for{' '}
+            {DEFAULT_REDACTION_TAG}.
+          </span>
+          <input
+            className="min-w-0 rounded-xl border border-line bg-black/25 px-3.5 py-2.5 text-sm uppercase tracking-wide text-snow outline-none transition placeholder:normal-case placeholder:tracking-normal placeholder:text-mist-dim focus:border-accent/60 disabled:opacity-50"
+            value={redactionTag}
+            onChange={(event) => {
+              onRedactionTagChange(event.currentTarget.value);
+            }}
+            onBlur={() => {
+              onRedactionTagChange(normalizeRedactionTag(redactionTag));
+            }}
+            maxLength={32}
+            placeholder={DEFAULT_REDACTION_TAG}
+            autoComplete="off"
+            spellCheck={false}
+            disabled={locked}
+            aria-label="Replacement tag for blocked words"
+          />
         </label>
 
         {error !== null && <p className="text-xs text-danger">{error}</p>}

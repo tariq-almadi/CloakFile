@@ -63,8 +63,10 @@ export function SanitizerPage(): JSX.Element {
           enabledTypes={state.enabledTypes}
           coverage={capabilities?.detection ?? []}
           blacklistWords={state.blacklistWords}
+          redactionTag={state.redactionTag}
           onToggle={workflow.toggleCategory}
           onBlacklistChange={workflow.setBlacklistWords}
+          onRedactionTagChange={workflow.setRedactionTag}
           locked={!hasFile}
         />
 

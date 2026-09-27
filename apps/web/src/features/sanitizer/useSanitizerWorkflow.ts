@@ -22,6 +22,7 @@ export interface SanitizerWorkflow {
   readonly selectFile: (file: File) => void;
   readonly toggleCategory: (piiType: PIIType) => void;
   readonly setBlacklistWords: (entries: readonly BlacklistWord[]) => void;
+  readonly setRedactionTag: (tag: string) => void;
   readonly togglePlaceholder: (placeholder: string) => void;
   readonly analyze: () => Promise<void>;
   readonly sanitize: () => Promise<void>;
@@ -60,14 +61,14 @@ export function useSanitizerWorkflow(): SanitizerWorkflow {
   }, []);
 
   const analyze = useCallback(async (): Promise<void> => {
-    const { file, enabledTypes, blacklistWords } = state;
+    const { file, enabledTypes, blacklistWords, redactionTag } = state;
     if (file === null) return;
 
     dispatch({ type: 'analysis-started' });
     await run(async () => {
       const analysis = await apiClient.analyze(
         file,
-        buildAnalyzeOptions({ enabledTypes, blacklistWords }),
+        buildAnalyzeOptions({ enabledTypes, blacklistWords, redactionTag }),
       );
       dispatch({ type: 'analysis-succeeded', analysis });
     });
@@ -107,6 +108,9 @@ export function useSanitizerWorkflow(): SanitizerWorkflow {
     }, []),
     setBlacklistWords: useCallback((blacklistWords: readonly BlacklistWord[]) => {
       dispatch({ type: 'blacklist-changed', blacklistWords });
+    }, []),
+    setRedactionTag: useCallback((redactionTag: string) => {
+      dispatch({ type: 'redaction-tag-changed', redactionTag });
     }, []),
     togglePlaceholder: useCallback((placeholder: string) => {
       dispatch({ type: 'placeholder-toggled', placeholder });

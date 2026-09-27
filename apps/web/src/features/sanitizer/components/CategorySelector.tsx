@@ -10,8 +10,10 @@ interface CategorySelectorProps {
   readonly enabledTypes: readonly PIIType[];
   readonly coverage: readonly DetectorCoverageDto[];
   readonly blacklistWords: readonly BlacklistWord[];
+  readonly redactionTag: string;
   readonly onToggle: (piiType: PIIType) => void;
   readonly onBlacklistChange: (entries: readonly BlacklistWord[]) => void;
+  readonly onRedactionTagChange: (tag: string) => void;
   readonly locked?: boolean;
 }
 
@@ -26,8 +28,10 @@ export function CategorySelector({
   enabledTypes,
   coverage,
   blacklistWords,
+  redactionTag,
   onToggle,
   onBlacklistChange,
+  onRedactionTagChange,
   locked = false,
 }: CategorySelectorProps): JSX.Element {
   // CUSTOM is driven by the word blacklist, not a category checkbox.
@@ -101,7 +105,13 @@ export function CategorySelector({
         </p>
       )}
 
-      <WordBlacklist entries={blacklistWords} onChange={onBlacklistChange} locked={locked} />
+      <WordBlacklist
+        entries={blacklistWords}
+        onChange={onBlacklistChange}
+        redactionTag={redactionTag}
+        onRedactionTagChange={onRedactionTagChange}
+        locked={locked}
+      />
     </section>
   );
 }

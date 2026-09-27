@@ -5,7 +5,11 @@ import type {
   SanitizeResponse,
 } from '@cloakfile/shared';
 
-import { blacklistToCustomPatterns, type BlacklistWord } from './word-blacklist.js';
+import {
+  blacklistToCustomPatterns,
+  DEFAULT_REDACTION_TAG,
+  type BlacklistWord,
+} from './word-blacklist.js';
 
 /**
  * The steps the user moves through. Modelled explicitly so the UI renders from
@@ -19,6 +23,8 @@ export interface WorkflowState {
   readonly file: File | null;
   readonly enabledTypes: readonly PIIType[];
   readonly blacklistWords: readonly BlacklistWord[];
+  /** Placeholder label for blocked words (`[REDACTED_001]` by default). */
+  readonly redactionTag: string;
   readonly analysis: AnalyzeResponse | null;
   /** Placeholders the user unticked during review; these are left as-is. */
   readonly excludedPlaceholders: readonly string[];
@@ -31,6 +37,7 @@ export type WorkflowAction =
   | { type: 'file-cleared' }
   | { type: 'category-toggled'; piiType: PIIType }
   | { type: 'blacklist-changed'; blacklistWords: readonly BlacklistWord[] }
+  | { type: 'redaction-tag-changed'; redactionTag: string }
   | { type: 'analysis-started' }
   | { type: 'analysis-succeeded'; analysis: AnalyzeResponse }
   | { type: 'placeholder-toggled'; placeholder: string }
@@ -62,6 +69,7 @@ export const initialWorkflowState: WorkflowState = {
   file: null,
   enabledTypes: DEFAULT_ENABLED_TYPES,
   blacklistWords: [],
+  redactionTag: DEFAULT_REDACTION_TAG,
   analysis: null,
   excludedPlaceholders: [],
   result: null,
@@ -82,6 +90,7 @@ export function workflowReducer(state: WorkflowState, action: WorkflowAction): W
         ...initialWorkflowState,
         enabledTypes: state.enabledTypes,
         blacklistWords: state.blacklistWords,
+        redactionTag: state.redactionTag,
         file: action.file,
       };
 
@@ -90,6 +99,7 @@ export function workflowReducer(state: WorkflowState, action: WorkflowAction): W
         ...initialWorkflowState,
         enabledTypes: state.enabledTypes,
         blacklistWords: state.blacklistWords,
+        redactionTag: state.redactionTag,
       };
 
     case 'category-toggled': {
@@ -111,6 +121,16 @@ export function workflowReducer(state: WorkflowState, action: WorkflowAction): W
       return {
         ...state,
         blacklistWords: action.blacklistWords,
+        step: 'select',
+        analysis: null,
+        result: null,
+        error: null,
+      };
+
+    case 'redaction-tag-changed':
+      return {
+        ...state,
+        redactionTag: action.redactionTag,
         step: 'select',
         analysis: null,
         result: null,
@@ -167,15 +187,15 @@ export function canAnalyze(state: WorkflowState): boolean {
 }
 
 export function buildAnalyzeOptions(
-  state: Pick<WorkflowState, 'enabledTypes' | 'blacklistWords'>,
+  state: Pick<WorkflowState, 'enabledTypes' | 'blacklistWords' | 'redactionTag'>,
 ): AnalyzeOptionsInput {
-  const customPatterns = blacklistToCustomPatterns(state.blacklistWords);
+  const customPatterns = blacklistToCustomPatterns(state.blacklistWords, state.redactionTag);
   const enabledTypes = [...state.enabledTypes];
   if (customPatterns.length > 0 && !enabledTypes.includes('CUSTOM')) {
     enabledTypes.push('CUSTOM');
   }
 
-  return { enabledTypes, customPatterns };
+  return { enabledTypes, customPatterns: [...customPatterns] };
 }
 
 export function canSanitize(state: WorkflowState): boolean {
