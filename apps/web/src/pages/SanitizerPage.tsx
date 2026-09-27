@@ -24,8 +24,9 @@ export function SanitizerPage(): JSX.Element {
   const workflow = useSanitizerWorkflow();
   const { state, capabilities } = workflow;
 
+  const offeredFormats = new Set(['txt', 'pdf', 'docx']);
   const acceptedExtensions = (capabilities?.formats ?? [])
-    .filter((format) => format.extract && format.generate)
+    .filter((format) => format.extract && format.generate && offeredFormats.has(format.format))
     .map((format) => FORMAT_EXTENSIONS[format.format]);
 
   const hasFile = state.file !== null;

@@ -50,7 +50,7 @@ export function UploadPanel({ file, acceptedExtensions, onSelect }: UploadPanelP
         </span>
         <span className="max-w-sm text-center text-xs leading-relaxed text-mist-dim">
           {file === null
-            ? 'PDF, Word, text, CSV, or JSON'
+            ? 'PDF, Word, or plain text'
             : `${file.name} · ${String(Math.ceil(file.size / 1024))} KB`}
         </span>
       </label>
