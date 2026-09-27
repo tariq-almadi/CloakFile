@@ -1,39 +1,60 @@
 import type { RawDetection } from '@cloakfile/shared';
 
+import { isLuhnValid } from '../internal/luhn.js';
 import type { DetectionInput, Detector } from '../types.js';
 
-const SSN_PATTERN = /(?<![\d-])(\d{3})-(\d{2})-(\d{4})(?![\d-])/gu;
-/** A masked SSN still identifies the holder through the visible serial. */
-const MASKED_SSN_PATTERN = /\*{3}-\*{2}-\d{4}(?![\d-])/gu;
-/** Unseparated nine-digit runs are only treated as an SSN with nearby context. */
-const COMPACT_SSN_PATTERN = /(?<![\d-])(\d{3})(\d{2})(\d{4})(?![\d-])/gu;
-const CONTEXT_PATTERN = /\b(?:ssn|social\s+security(?:\s+number)?|s\.s\.n\.)\b/iu;
+/** Canadian SIN: three groups of three digits (123-456-789). */
+const SIN_PATTERN = /(?<![\d-])(\d{3})-(\d{3})-(\d{3})(?![\d-])/gu;
+/** US-style grouping that still appears in some Canadian documents. */
+const US_STYLE_PATTERN = /(?<![\d-])(\d{3})-(\d{2})-(\d{4})(?![\d-])/gu;
+/** Masked serials still identify the holder through the visible digits. */
+const MASKED_US_STYLE_PATTERN = /\*{3}-\*{2}-\d{4}(?![\d-])/gu;
+const MASKED_SIN_PATTERN = /\*{3}-\*{3}-\d{3}(?![\d-])/gu;
+/** Bare nine-digit runs only with nearby SIN / SSN wording. */
+const COMPACT_PATTERN = /(?<![\d-])(\d{9})(?![\d-])/gu;
+const CONTEXT_PATTERN =
+  /\b(?:sin|s\.i\.n\.|ssn|s\.s\.n\.|social\s+insurance(?:\s+number)?|social\s+security(?:\s+number)?)\b/iu;
 const CONTEXT_WINDOW = 40;
 
 /**
- * US Social Security numbers, validated against the SSA's structural rules.
+ * Social Insurance Numbers (Canada), with US-style grouping still accepted.
  *
- * The rules are worth applying because they remove a large share of the
- * nine-digit numbers that are not SSNs:
- *   - area (first 3) is never 000, 666, or 900-999
- *   - group (middle 2) is never 00
- *   - serial (last 4) is never 0000
- *
- * This detector is US-specific by design. Other national identifiers belong in
- * their own detectors with their own checksums, registered under
- * `GOVERNMENT_ID` — see `government-id-detector.ts`.
+ * Canadian SINs use a Luhn check. US-style `###-##-####` runs keep the SSA
+ * structural rules so we do not invent a checksum we do not have. The PII type
+ * stays `SSN` on the wire for compatibility; placeholders render as `[SIN_…]`.
  */
 export class SsnDetector implements Detector {
-  readonly name = 'ssn-us';
+  readonly name = 'sin-ca';
   readonly types = ['SSN'] as const;
   readonly maturity = 'reference' as const;
 
   detect({ text }: DetectionInput): readonly RawDetection[] {
     const detections: RawDetection[] = [];
+    const claimed = new Set<string>();
 
-    for (const match of text.matchAll(SSN_PATTERN)) {
-      if (!isStructurallyValid(match[1], match[2], match[3])) continue;
-      detections.push({
+    const push = (detection: RawDetection): void => {
+      const key = `${String(detection.start)}:${String(detection.end)}`;
+      if (claimed.has(key)) return;
+      claimed.add(key);
+      detections.push(detection);
+    };
+
+    for (const match of text.matchAll(SIN_PATTERN)) {
+      const digits = `${match[1] ?? ''}${match[2] ?? ''}${match[3] ?? ''}`;
+      if (!isCanadianSin(digits)) continue;
+      push({
+        type: 'SSN',
+        start: match.index,
+        end: match.index + match[0].length,
+        value: match[0],
+        confidence: 0.95,
+        detector: this.name,
+      });
+    }
+
+    for (const match of text.matchAll(US_STYLE_PATTERN)) {
+      if (!isUsStyleStructurallyValid(match[1], match[2], match[3])) continue;
+      push({
         type: 'SSN',
         start: match.index,
         end: match.index + match[0].length,
@@ -43,8 +64,8 @@ export class SsnDetector implements Detector {
       });
     }
 
-    for (const match of text.matchAll(MASKED_SSN_PATTERN)) {
-      detections.push({
+    for (const match of text.matchAll(MASKED_SIN_PATTERN)) {
+      push({
         type: 'SSN',
         start: match.index,
         end: match.index + match[0].length,
@@ -54,16 +75,32 @@ export class SsnDetector implements Detector {
       });
     }
 
-    for (const match of text.matchAll(COMPACT_SSN_PATTERN)) {
-      if (!isStructurallyValid(match[1], match[2], match[3])) continue;
-      if (!hasNearbyContext(text, match.index)) continue;
-      detections.push({
+    for (const match of text.matchAll(MASKED_US_STYLE_PATTERN)) {
+      push({
         type: 'SSN',
         start: match.index,
         end: match.index + match[0].length,
         value: match[0],
-        // Lower: nine bare digits are ambiguous even with a keyword nearby.
-        confidence: 0.7,
+        confidence: 0.85,
+        detector: this.name,
+      });
+    }
+
+    for (const match of text.matchAll(COMPACT_PATTERN)) {
+      const digits = match[1] ?? '';
+      if (!hasNearbyContext(text, match.index)) continue;
+      const confidence = isCanadianSin(digits)
+        ? 0.8
+        : isUsStyleStructurallyValid(digits.slice(0, 3), digits.slice(3, 5), digits.slice(5, 9))
+          ? 0.7
+          : 0;
+      if (confidence === 0) continue;
+      push({
+        type: 'SSN',
+        start: match.index,
+        end: match.index + match[0].length,
+        value: match[0],
+        confidence,
         detector: this.name,
       });
     }
@@ -72,7 +109,14 @@ export class SsnDetector implements Detector {
   }
 }
 
-function isStructurallyValid(
+function isCanadianSin(digits: string): boolean {
+  if (!/^\d{9}$/u.test(digits)) return false;
+  // Reject all zeros; temporary SINs may start with 9 and still Luhn-check.
+  if (digits === '000000000') return false;
+  return isLuhnValid(digits, 9, 9);
+}
+
+function isUsStyleStructurallyValid(
   area: string | undefined,
   group: string | undefined,
   serial: string | undefined,

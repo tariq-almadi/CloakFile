@@ -1,12 +1,11 @@
 /**
  * Luhn (mod 10) checksum.
  *
- * Returns false for anything that is not a run of ASCII digits, and for
- * implausibly short or long inputs. Callers are expected to have normalised
- * separators away first.
+ * Returns false for anything that is not a run of ASCII digits. Callers choose
+ * the length bounds that make sense for their identifier (cards vs SINs).
  */
-export function isLuhnValid(digits: string): boolean {
-  if (digits.length < 12 || digits.length > 19) return false;
+export function isLuhnValid(digits: string, minLength = 12, maxLength = 19): boolean {
+  if (digits.length < minLength || digits.length > maxLength) return false;
   if (!/^\d+$/u.test(digits)) return false;
 
   let sum = 0;
