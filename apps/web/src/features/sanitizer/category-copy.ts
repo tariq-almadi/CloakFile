@@ -30,7 +30,7 @@ export const CATEGORY_COPY: Readonly<
     example: 'e.g. 4111 2222 3333 4444',
   },
   SSN: {
-    title: 'Social security numbers',
+    title: 'Social insurance numbers',
     example: 'e.g. 123-45-6789 or ***-**-4819',
   },
   GOVERNMENT_ID: {

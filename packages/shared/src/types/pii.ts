@@ -40,7 +40,7 @@ export const PII_TYPE_LABELS: Readonly<Record<PIIType, string>> = {
   EMAIL: 'Email addresses',
   PHONE: 'Phone numbers',
   CREDIT_CARD: 'Credit card numbers',
-  SSN: 'Social security numbers',
+  SSN: 'Social insurance numbers',
   GOVERNMENT_ID: 'Government IDs',
   BANK_ACCOUNT: 'Bank / account numbers',
   ADDRESS: 'Addresses',
