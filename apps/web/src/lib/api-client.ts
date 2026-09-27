@@ -13,9 +13,12 @@ import type {
  */
 function resolveApiBaseUrl(): string {
   const configured: unknown = import.meta.env['VITE_API_BASE_URL'];
-  return typeof configured === 'string' && configured.length > 0
-    ? configured.replace(/\/$/u, '')
-    : 'http://127.0.0.1:3001';
+  // Explicit empty string means same-origin (Vercel rewrite). Unset falls back
+  // to the local API in development, and to same-origin in production builds.
+  if (typeof configured === 'string') {
+    return configured.replace(/\/$/u, '');
+  }
+  return import.meta.env.PROD ? '' : 'http://127.0.0.1:3001';
 }
 
 const API_BASE_URL = resolveApiBaseUrl();

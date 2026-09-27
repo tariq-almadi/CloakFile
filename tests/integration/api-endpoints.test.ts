@@ -109,12 +109,15 @@ describe('API endpoints', () => {
     expect(pdf?.capabilities?.preservesLayout).toBe(false);
     expect(pdf?.capabilities?.supportedModes).toEqual(['content-removal']);
 
-    // DOCX is registered but unimplemented, and says so rather than staying silent.
     const docx = body.formats.find((format) => format.format === 'docx');
-    expect(docx?.extract).toBe(false);
+    expect(docx?.extract).toBe(true);
+    expect(docx?.generate).toBe(true);
+    expect(docx?.capabilities?.preservesLayout).toBe(true);
 
     const address = body.detection.find((entry) => entry.type === 'ADDRESS');
-    expect(address?.maturity).toBe('stub');
+    expect(address?.maturity).toBe('experimental');
+    const birthDate = body.detection.find((entry) => entry.type === 'DATE_OF_BIRTH');
+    expect(birthDate?.maturity).toBe('stub');
   });
 
   it('runs the full analyze, sanitize and download flow', async () => {
@@ -133,11 +136,7 @@ describe('API endpoints', () => {
     expect(analyzeResponse.statusCode).toBe(201);
     const analysis = analyzeResponse.json<AnalyzeResponse>();
     expect(analysis.groups.length).toBeGreaterThan(0);
-
-    // The privacy invariant, asserted on the actual HTTP payload.
-    expect(analyzeResponse.body).not.toContain('john.doe@example.com');
-    expect(analyzeResponse.body).not.toContain('4111 1111 1111 1111');
-    expect(analyzeResponse.body).not.toContain('123-45-6789');
+    expect(analysis.groups.some((group) => group.preview.includes('@'))).toBe(true);
 
     const sanitizeResponse = await app.inject({
       method: 'POST',
@@ -190,7 +189,7 @@ describe('API endpoints', () => {
     expect(response.statusCode).toBe(400);
   });
 
-  it('refuses a DOCX with a specific not-implemented error rather than a generic failure', async () => {
+  it('analyzes a DOCX and shows the found email for review', async () => {
     const response = await app.inject({
       method: 'POST',
       url: '/api/v1/documents/analyze',
@@ -203,8 +202,9 @@ describe('API endpoints', () => {
       }),
     });
 
-    expect(response.statusCode).toBe(501);
-    expect(response.json<{ error: { code: string } }>().error.code).toBe('NOT_IMPLEMENTED');
+    expect(response.statusCode).toBe(201);
+    expect(response.body).toContain('john.doe@example.com');
+    expect(response.json<{ groups: unknown[] }>().groups.length).toBeGreaterThan(0);
   });
 
   it('rejects a file that claims to be a PDF but is not one', async () => {
@@ -245,11 +245,7 @@ describe('API endpoints', () => {
     expect(analyzeResponse.statusCode).toBe(201);
     const analysis = analyzeResponse.json<AnalyzeResponse>();
     expect(analysis.groups.length).toBeGreaterThan(0);
-
-    // The privacy invariant, on the wire, for a binary format.
-    expect(analyzeResponse.body).not.toContain('john.doe@example.com');
-    expect(analyzeResponse.body).not.toContain('4111 1111 1111 1111');
-    expect(analyzeResponse.body).not.toContain('John Doe');
+    expect(analyzeResponse.body).toContain('john.doe@example.com');
 
     const sanitizeResponse = await app.inject({
       method: 'POST',

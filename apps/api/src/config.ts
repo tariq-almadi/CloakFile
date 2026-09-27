@@ -35,6 +35,12 @@ const environmentSchema = z.object({
 
   SANITIZATION_STRICT_VERIFICATION: booleanFromEnv.default(true),
 
+  /**
+   * When true, Fastify trusts `X-Forwarded-*` (required behind Vercel) and CORS
+   * reflects the request Origin so preview URLs work without a fixed allow-list.
+   */
+  API_TRUST_PROXY: booleanFromEnv.default(false),
+
   LOG_LEVEL: z.enum(['trace', 'debug', 'info', 'warn', 'error', 'fatal']).default('info'),
 });
 

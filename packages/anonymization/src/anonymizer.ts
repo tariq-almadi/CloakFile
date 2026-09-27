@@ -1,5 +1,4 @@
 import {
-  buildPreview,
   type AnonymizedDetection,
   type Detection,
   type PlaceholderGroup,
@@ -104,9 +103,8 @@ export function applyAnonymization(
 /**
  * Collapse occurrences into one reviewable item per distinct value.
  *
- * This is the only representation of a detection that leaves the backend, and
- * it carries no original value and no offsets — only a placeholder, a count and
- * a preview produced by the shared preview policy.
+ * The review list shows the found text itself so the user can decide what to
+ * keep. Sessions are short-lived and the download is the sanitized file only.
  */
 export function summarizeGroups(detections: readonly AnonymizedDetection[]): PlaceholderGroup[] {
   const groups = new Map<string, PlaceholderGroup & { detectors: string[] }>();
@@ -119,7 +117,7 @@ export function summarizeGroups(detections: readonly AnonymizedDetection[]): Pla
         groupId: detection.groupId,
         type: detection.type,
         placeholder: detection.placeholder,
-        preview: buildPreview(detection.type, detection.value, detection.metadata),
+        preview: detection.value,
         occurrences: 1,
         confidence: detection.confidence,
         detectors: [detection.detector],

@@ -37,3 +37,7 @@ Thumbs.db
 # Local caches
 .eslintcache
 .cache/
+.vercel
+
+# Generated for Vercel static hosting (repo root only)
+/public/

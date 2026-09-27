@@ -50,14 +50,14 @@ export interface AnonymizedDetection extends Detection {
 /**
  * All occurrences of one logical value, collapsed into a single reviewable item.
  *
- * This is the unit the user selects in the review UI, and the unit the client
- * is allowed to see. It deliberately carries no offsets and no original value.
+ * This is the unit the user selects in the review UI. Offsets stay server-side;
+ * `preview` is the found text so the user can decide what to keep.
  */
 export interface PlaceholderGroup {
   readonly groupId: string;
   readonly type: PIIType;
   readonly placeholder: string;
-  /** Produced exclusively by `buildPreview`. Safe to display. */
+  /** Found text shown so the user can decide keep vs remove. */
   readonly preview: string;
   readonly occurrences: number;
   /** Highest confidence among the occurrences in this group. */

@@ -1,18 +1,16 @@
 import type { CustomPattern } from '@cloakfile/shared';
 
+import { AddressDetector } from './detectors/address-detector.js';
+import { BankAccountDetector } from './detectors/bank-account-detector.js';
 import { CreditCardDetector } from './detectors/credit-card-detector.js';
 import { CustomRegexDetector } from './detectors/custom-regex-detector.js';
 import { EmailDetector } from './detectors/email-detector.js';
 import { IPAddressDetector } from './detectors/ip-address-detector.js';
 import { NlpEntityDetector } from './detectors/nlp-entity-detector.js';
+import { PersonSequenceDetector } from './detectors/person-sequence-detector.js';
 import { PhoneDetector } from './detectors/phone-detector.js';
 import { SsnDetector } from './detectors/ssn-detector.js';
-import {
-  addressDetector,
-  bankAccountDetector,
-  dateOfBirthDetector,
-  governmentIdDetector,
-} from './detectors/stub-detector.js';
+import { dateOfBirthDetector, governmentIdDetector } from './detectors/stub-detector.js';
 import { UrlDetector } from './detectors/url-detector.js';
 import { DetectorRegistry } from './registry.js';
 
@@ -41,9 +39,10 @@ export function createDefaultRegistry(options: DefaultRegistryOptions = {}): Det
     new IPAddressDetector(),
     new UrlDetector(),
     new NlpEntityDetector(),
-    addressDetector,
+    new PersonSequenceDetector(),
+    new AddressDetector(),
+    new BankAccountDetector(),
     governmentIdDetector,
-    bankAccountDetector,
     dateOfBirthDetector,
   ]);
 

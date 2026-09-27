@@ -17,6 +17,10 @@ const CONTENT_TYPES = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
   <Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/>
 </Types>`;
 
+export function docxPackage(entries: readonly { name: string; content: string }[]): Uint8Array {
+  return buildStoredZip(entries);
+}
+
 export function minimalDocxContainer(bodyText: string): Uint8Array {
   const document = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">

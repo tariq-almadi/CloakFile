@@ -3,6 +3,12 @@ import nlp from 'compromise';
 
 import { findLiteralOccurrences } from '../internal/text.js';
 import type { DetectionInput, Detector } from '../types.js';
+import {
+  clipPersonSurface,
+  extendPersonSpan,
+  isHeadingPhrase,
+  stripPossessiveSuffix,
+} from './person-name-heuristics.js';
 
 /**
  * Names and organizations, via compromise.
@@ -50,17 +56,27 @@ export class NlpEntityDetector implements Detector {
     const seen = new Set<string>();
 
     for (const raw of surfaces) {
-      const surface = trimSurface(raw);
+      const surface = type === 'PERSON' ? clipPersonSurface(trimSurface(raw)) : trimSurface(raw);
       // One or two characters is noise; it would match half the document.
-      if (surface.length < 3 || seen.has(surface)) continue;
+      if (surface.length < 3 || surface.includes('\u001f') || seen.has(surface)) continue;
+      if (isHeadingPhrase(surface)) continue;
       seen.add(surface);
 
       for (const occurrence of findLiteralOccurrences(text, surface)) {
+        const span =
+          type === 'PERSON'
+            ? extendPersonSpan(text, occurrence.start, occurrence.end)
+            : { start: occurrence.start, end: occurrence.end, value: surface };
+
+        if (span.value.includes('\u001f') || isHeadingPhrase(span.value)) continue;
+
+        const kind = type === 'PERSON' && ORG_SUFFIX.test(span.value) ? 'ORGANIZATION' : type;
+
         detections.push({
-          type,
-          start: occurrence.start,
-          end: occurrence.end,
-          value: surface,
+          type: kind,
+          start: span.start,
+          end: span.end,
+          value: span.value,
           confidence,
           detector: this.name,
         });
@@ -95,10 +111,13 @@ function toStringArray(value: unknown): readonly string[] {
  * which is the correct reading, and arriving there by a general rule is better
  * than special-casing it here.
  */
+const ORG_SUFFIX = /\b(?:Bank|Inc|Corp|Corporation|LLC|Ltd|University|Laboratories|Holdings)\b/u;
+
 function trimSurface(raw: string): string {
-  return raw
-    .trim()
-    .replace(/^[^\p{L}\p{N}]+/u, '')
-    .replace(/['\u2019]s$/u, '')
-    .replace(/[^\p{L}\p{N}]+$/u, '');
+  return stripPossessiveSuffix(
+    raw
+      .trim()
+      .replace(/^[^\p{L}\p{N}]+/u, '')
+      .replace(/[^\p{L}\p{N}]+$/u, ''),
+  );
 }

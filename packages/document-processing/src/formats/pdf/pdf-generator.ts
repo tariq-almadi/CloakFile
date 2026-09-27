@@ -3,15 +3,20 @@ import { FORMAT_MEDIA_TYPES, type GeneratedDocument, type SanitizationMode } fro
 
 import type { DocumentGenerator, GenerationInput } from '../../types.js';
 import { toEncodableText } from './pdf-fonts.js';
+import { pdfPlanFor } from './pdf-layout-store.js';
+import { renderPositionedPdf } from './pdf-positioned-render.js';
 import { splitSanitizedBlocks } from './text-blocks.js';
 
 const PAGE_WIDTH = 612; // US Letter, 72dpi
 const PAGE_HEIGHT = 792;
 const MARGIN = 54;
-const BODY_SIZE = 10.5;
-const HEADING_SIZE = 11.5;
-const LINE_HEIGHT = 14;
-const BLOCK_GAP = 10;
+const BODY_SIZE = 11;
+const SUBTITLE_SIZE = 11;
+const HEADING_SIZE = 13;
+const TITLE_SIZE = 16;
+const LINE_HEIGHT = 15;
+const PARAGRAPH_GAP = 10;
+const BLOCK_GAP = 12;
 
 /**
  * Builds a new PDF from sanitized text.
@@ -43,7 +48,26 @@ export class PdfGenerator implements DocumentGenerator {
   readonly mode: SanitizationMode = 'content-removal';
   readonly implemented = true;
 
-  async generate({ source, sanitizedText }: GenerationInput): Promise<GeneratedDocument> {
+  async generate({ source, sanitizedText, replacements }: GenerationInput): Promise<GeneratedDocument> {
+    const plan = pdfPlanFor(source);
+    if (plan !== undefined && plan.pages.some((page) => page.runs.length > 0)) {
+      const rendered = await renderPositionedPdf(source, sanitizedText, plan, replacements ?? []);
+      const warnings: string[] = [];
+      if (rendered.substituted > 0) {
+        warnings.push(
+          `${String(rendered.substituted)} character(s) could not be represented in the output font and were replaced with "?". ` +
+            'Generated PDFs use a Latin alphabet font; text in other scripts is not preserved.',
+        );
+      }
+      return {
+        format: 'pdf',
+        bytes: rendered.bytes,
+        mediaType: FORMAT_MEDIA_TYPES.pdf,
+        mode: this.mode,
+        warnings,
+      };
+    }
+
     const warnings: string[] = [];
 
     const blocks = splitSanitizedBlocks(sanitizedText, source.segments.length);
@@ -110,6 +134,20 @@ function headingFor(region: string | undefined, locator: string | undefined): st
   return null;
 }
 
+type ParagraphRole = 'title' | 'heading' | 'subtitle' | 'body';
+
+/**
+ * The extractor separates titles, section headings and body into paragraphs.
+ * Font size is not carried into the sanitized string, so the generator
+ * recognises those blocks from their shape.
+ */
+function paragraphRole(paragraph: string): ParagraphRole {
+  const text = paragraph.trim();
+  if (/^document id\s*:/iu.test(text)) return 'subtitle';
+  if (/^section\s+\d+\s*:/iu.test(text)) return 'heading';
+  return 'body';
+}
+
 /**
  * Even a freshly authored document gets metadata: pdf-lib stamps its own name
  * and the current time. The name is noise, but the timestamps say when a user
@@ -156,11 +194,38 @@ class Layout {
       this.#writeLine(toEncodableText(heading, charset).text, this.#heading, HEADING_SIZE);
     }
 
-    for (const paragraph of encoded.text.split('\n')) {
-      const lines = wrap(paragraph, this.#body, BODY_SIZE, PAGE_WIDTH - MARGIN * 2);
-      for (const line of lines) {
-        this.#writeLine(line, this.#body, BODY_SIZE);
+    const paragraphs = encoded.text.split('\n');
+    let seenContent = false;
+
+    for (const paragraph of paragraphs) {
+      if (paragraph.trim() === '') {
+        if (seenContent) this.#advance(PARAGRAPH_GAP);
+        continue;
       }
+
+      const role = paragraphRole(paragraph);
+      seenContent = true;
+
+      if (role === 'title') {
+        this.#writeWrapped(paragraph, this.#heading, TITLE_SIZE);
+        this.#advance(6);
+        continue;
+      }
+
+      if (role === 'heading') {
+        this.#advance(BLOCK_GAP);
+        this.#writeWrapped(paragraph, this.#heading, HEADING_SIZE);
+        this.#advance(4);
+        continue;
+      }
+
+      if (role === 'subtitle') {
+        this.#writeWrapped(paragraph, this.#body, SUBTITLE_SIZE);
+        this.#advance(4);
+        continue;
+      }
+
+      this.#writeWrapped(paragraph, this.#body, BODY_SIZE);
     }
 
     return encoded.substituted;
@@ -171,11 +236,19 @@ class Layout {
     if (this.#page === null) this.#newPage();
   }
 
+  #writeWrapped(text: string, font: PDFFont, size: number): void {
+    const lines = wrap(text, font, size, PAGE_WIDTH - MARGIN * 2);
+    for (const line of lines) {
+      this.#writeLine(line, font, size);
+    }
+  }
+
   #writeLine(line: string, font: PDFFont, size: number): void {
-    if (this.#page === null || this.#y < MARGIN) this.#newPage();
+    const leading = Math.max(LINE_HEIGHT, size * 1.35);
+    if (this.#page === null || this.#y - leading < MARGIN) this.#newPage();
     // `#newPage` always assigns, but the compiler cannot see through it.
     this.#page?.drawText(line, { x: MARGIN, y: this.#y, size, font });
-    this.#y -= LINE_HEIGHT;
+    this.#y -= leading;
   }
 
   #advance(points: number): void {

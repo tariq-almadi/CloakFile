@@ -11,6 +11,7 @@ import {
   SAMPLE_TEXT_SECRETS,
   toBytes,
 } from '../fixtures/index.js';
+import { docxPackage } from '../fixtures/docx.js';
 import {
   HOSTILE_PDF_SECRETS,
   hostilePdf,
@@ -136,15 +137,11 @@ describe('sanitization round trip', () => {
     expect(result.verification.status).toBe('pass');
   });
 
-  it('never exposes an original value in the client-facing groups', async () => {
+  it('shows found values in the client-facing groups for review', async () => {
     const { analysis } = await sanitize(SAMPLE_TEXT, 'txt');
-    const serialised = JSON.stringify(analysis.groups);
 
-    for (const secret of SAMPLE_TEXT_SECRETS) {
-      expect(serialised).not.toContain(secret);
-    }
-    // Not even the card's leading digits, only the last four.
-    expect(serialised).not.toContain('4111 1111');
+    expect(analysis.groups.some((group) => group.preview.includes('@'))).toBe(true);
+    expect(analysis.groups.every((group) => group.preview.length > 0)).toBe(true);
   });
 
   it('keeps a CSV parseable and structurally unchanged', async () => {
@@ -167,7 +164,7 @@ describe('sanitization round trip', () => {
 
   it('reports a category with no detector instead of implying coverage', async () => {
     const { analysis } = await sanitize(SAMPLE_TEXT, 'txt', {
-      enabledTypes: ['ADDRESS'],
+      enabledTypes: ['DATE_OF_BIRTH'],
       customPatterns: [],
     });
 
@@ -221,18 +218,67 @@ describe('sanitization round trip · pdf', () => {
     expect(outputText.split('[EMAIL_001]').length - 1).toBe(3);
   });
 
-  it('never exposes an original value in the client-facing groups', async () => {
+  it('shows found values in the client-facing groups for review', async () => {
     const { analysis } = await sanitizePdf(hostilePdf());
-    const serialised = JSON.stringify(analysis.groups);
 
-    for (const secret of HOSTILE_PDF_SECRETS) {
-      expect(serialised).not.toContain(secret);
-    }
+    expect(analysis.groups.length).toBeGreaterThan(0);
+    expect(analysis.groups.every((group) => group.preview.length > 0)).toBe(true);
   });
 
   it('declares content-removal, not visual redaction', async () => {
     const { result } = await sanitizePdf(await simpleTextPdf());
 
     expect(result.generated.mode).toBe('content-removal');
+  });
+});
+
+describe('sanitization round trip · docx', () => {
+  it('replaces text in the body, header, metadata and table without gluing cells', async () => {
+    const bytes = docxPackage([
+      {
+        name: 'word/document.xml',
+        content: `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+  <w:body>
+    <w:p><w:r><w:t>Jo</w:t></w:r><w:r><w:t>hn Doe's phone number is +1 514-555-0132.</w:t></w:r></w:p>
+    <w:tbl><w:tr>
+      <w:tc><w:p><w:r><w:t>Tariq Ibn Ziyad</w:t></w:r></w:p></w:tc>
+      <w:tc><w:p><w:r><w:t>Systems Architecture</w:t></w:r></w:p></w:tc>
+    </w:tr></w:tbl>
+  </w:body>
+</w:document>`,
+      },
+      {
+        name: 'word/header1.xml',
+        content: `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:hdr xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+  <w:p><w:r><w:t>Prepared by John Doe</w:t></w:r></w:p>
+</w:hdr>`,
+      },
+      {
+        name: 'docProps/core.xml',
+        content: `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<cp:coreProperties xmlns:cp="http://schemas.openxmlformats.org/package/2006/metadata/core-properties" xmlns:dc="http://purl.org/dc/elements/1.1/">
+  <dc:creator>John Doe</dc:creator>
+</cp:coreProperties>`,
+      },
+    ]);
+
+    const pipeline = new SanitizationPipeline();
+    const analysis = await pipeline.analyze({ bytes, format: 'docx', options: PDF_ENABLED });
+    const result = await pipeline.sanitize({ originalBytes: bytes, analysis });
+    const output = await createDefaultDocumentRegistry().extract({
+      bytes: result.generated.bytes,
+      format: 'docx',
+    });
+
+    expect(result.verification.status).toBe('pass');
+    expect(result.generated.mode).toBe('text-replacement');
+    expect(output.text).not.toContain('John Doe');
+    expect(output.text).not.toContain('Tariq Ibn Ziyad');
+    expect(output.text).not.toContain('514-555-0132');
+    expect(output.text).toContain("[PERSON_001]'s phone number is [PHONE_001].");
+    expect(output.text).toContain('Systems Architecture');
+    expect(output.text.split('[PERSON_001]').length - 1).toBeGreaterThanOrEqual(3);
   });
 });

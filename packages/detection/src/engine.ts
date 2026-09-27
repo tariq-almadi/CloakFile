@@ -48,6 +48,7 @@ export class DetectionEngine {
       for (const detection of produced) {
         // A detector may cover several types; keep only what the user enabled.
         if (!enabled.has(detection.type)) continue;
+        if (detection.value.includes('\u001f')) continue;
         assertWellFormed(detection, detector, text);
         raw.push(detection);
       }
@@ -100,6 +101,7 @@ function buildCoverageWarnings(
 ): string[] {
   const coverage = new Map(registry.coverage().map((entry) => [entry.type, entry]));
   const warnings: string[] = [];
+  let hasExperimental = false;
 
   for (const type of enabledTypes) {
     const entry = coverage.get(type);
@@ -110,8 +112,12 @@ function buildCoverageWarnings(
         `${label}: no detector is implemented yet, so nothing in this category was found or replaced.`,
       );
     } else if (entry.maturity === 'experimental') {
-      warnings.push(`${label}: detection is experimental and will miss cases. Review the results.`);
+      hasExperimental = true;
     }
+  }
+
+  if (hasExperimental) {
+    warnings.push('Some categories can miss matches — please review the list carefully.');
   }
 
   return warnings;

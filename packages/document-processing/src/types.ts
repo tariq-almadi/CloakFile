@@ -32,6 +32,12 @@ export interface DocumentExtractor {
   extract(input: ExtractionInput): MaybePromise<ExtractedDocument>;
 }
 
+export interface TextReplacement {
+  readonly start: number;
+  readonly end: number;
+  readonly placeholder: string;
+}
+
 export interface GenerationInput {
   /** The document as extracted, for structure and locators. */
   readonly source: ExtractedDocument;
@@ -39,6 +45,11 @@ export interface GenerationInput {
   readonly sanitizedText: string;
   /** Original bytes, for generators that rebuild in place rather than from scratch. */
   readonly originalBytes: Uint8Array;
+  /**
+   * Spans replaced in `sanitizedText`, used by the PDF generator to map original
+   * run offsets onto placeholders when several values sit close together.
+   */
+  readonly replacements?: readonly TextReplacement[];
 }
 
 /**

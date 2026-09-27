@@ -45,17 +45,21 @@ export class CreditCardDetector implements Detector {
         const digits = window.value.replace(/[ -]/gu, '');
 
         if (digits.length < 13 || digits.length > 19) continue;
-        if (!isLuhnValid(digits)) continue;
         if (isImplausible(digits)) continue;
 
         const brand = identifyCardNetwork(digits);
+        const luhn = isLuhnValid(digits);
+        // Grouped issuer numbers in test data and leaked dumps often fail Luhn.
+        // A bare digit run still has to pass the checksum, so order ids do not.
+        const formatted = /[ -]/u.test(window.value);
+        if (!luhn && !(formatted && brand !== undefined)) continue;
 
         detections.push({
           type: 'CREDIT_CARD',
           start: window.start,
           end: window.start + window.value.length,
           value: window.value,
-          confidence: brand === undefined ? 0.75 : 0.98,
+          confidence: luhn ? (brand === undefined ? 0.75 : 0.98) : 0.86,
           detector: this.name,
           // Safe metadata only: the brand and the last four digits are what the
           // preview policy permits showing. The full number stays server-side.

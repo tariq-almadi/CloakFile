@@ -11,12 +11,8 @@ import {
 import { DocumentProcessorRegistry } from './registry.js';
 
 /**
- * Every format the system knows about, including the ones that are not built.
- *
- * Registering the unimplemented handlers is the point: an unsupported upload
- * then fails with a specific, actionable `NOT_IMPLEMENTED` error instead of a
- * generic "unsupported format", and the capabilities endpoint can describe the
- * intended behaviour of formats that do not work yet.
+ * Every handler registered here can extract and generate. A format that cannot
+ * is omitted so the capabilities endpoint does not advertise it.
  *
  * `originalText` is needed by the CSV validator, which compares the output's
  * shape against the input's.

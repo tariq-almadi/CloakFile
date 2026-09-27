@@ -18,27 +18,55 @@ export function UploadPanel({ file, acceptedExtensions, onSelect }: UploadPanelP
     if (selected !== undefined) onSelect(selected);
   }
 
+  const formats = acceptedExtensions.map((ext) => ext.replace(/^\./u, '').toUpperCase()).join(' · ');
+
   return (
-    <section className="rounded border border-slate-300 p-4">
-      <h2 className="font-semibold">1. Upload a document</h2>
+    <section className="cf-panel p-5 sm:p-6">
+      <div className="mb-4 flex flex-wrap items-baseline justify-between gap-3">
+        <h2 className="font-display text-lg font-semibold text-snow">
+          <span className="mr-2 text-accent">1.</span>
+          Upload a document
+        </h2>
+        {formats.length > 0 && (
+          <span className="cf-pill bg-[rgb(183_168_245/0.12)] text-accent">{formats}</span>
+        )}
+      </div>
 
-      <input
-        type="file"
-        className="mt-2 block"
-        accept={acceptedExtensions.join(',')}
-        onChange={handleChange}
-      />
+      <label className="cf-file">
+        <input
+          type="file"
+          className="sr-only"
+          accept={acceptedExtensions.join(',')}
+          onChange={handleChange}
+        />
+        <span
+          className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[rgb(183_168_245/0.12)] text-xl text-accent shadow-[0_0_24px_rgb(183_168_245/0.15)]"
+          aria-hidden
+        >
+          ↑
+        </span>
+        <span className="text-sm font-semibold text-snow">
+          {file === null ? 'Choose a file' : 'Replace file'}
+        </span>
+        <span className="max-w-sm text-center text-xs leading-relaxed text-mist-dim">
+          {file === null
+            ? 'PDF, Word, text, CSV, or JSON'
+            : `${file.name} · ${String(Math.ceil(file.size / 1024))} KB`}
+        </span>
+      </label>
 
-      {file !== null && (
-        <p className="mt-2 text-sm text-slate-600">
-          {file.name} ({Math.ceil(file.size / 1024)} KB)
+      <aside className="mt-4 flex gap-3 rounded-2xl border border-line bg-[rgb(183_168_245/0.06)] p-4">
+        <span
+          className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[rgb(183_168_245/0.15)] text-sm text-accent"
+          aria-hidden
+        >
+          ◎
+        </span>
+        <p className="text-sm leading-relaxed text-mist">
+          Your document is processed on our server and is never sent to an external AI service. It is
+          held in memory only, and deleted once you download the sanitized version.
         </p>
-      )}
-
-      <p className="mt-2 text-xs text-slate-500">
-        Your document is processed on our server and is never sent to an external AI service. It is
-        held in memory only, and deleted once you download the sanitized version.
-      </p>
+      </aside>
     </section>
   );
 }

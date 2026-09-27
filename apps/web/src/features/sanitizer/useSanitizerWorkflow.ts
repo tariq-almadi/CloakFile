@@ -119,35 +119,17 @@ function formatApiError(error: ApiError): string {
   }
 
   const status = error.details?.['status'];
-  const summaries = error.details?.['summaries'];
-  const summaryLines =
-    Array.isArray(summaries) && summaries.every((line) => typeof line === 'string')
-      ? summaries
-      : [];
-
   if (status === 'inconclusive') {
-    return [
-      'We generated a file but could not confirm it is safe to share.',
-      'This often happens with scanned PDFs or pages that contain only images — the text is in the pixels, not in a layer we can read or rewrite.',
-      'Try exporting a text-based PDF, or upload a .txt / .csv / .json file instead.',
-      ...summaryLines,
-    ].join(' ');
+    return 'We made a file, but could not prove it is safe — often because pages are scanned images. Try a PDF with selectable text, or a Word / text file.';
   }
 
   const placeholders = error.details?.['offendingPlaceholders'];
   const placeholderNote =
     Array.isArray(placeholders) && placeholders.length > 0
-      ? ` Placeholders involved: ${placeholders.filter((p): p is string => typeof p === 'string').join(', ')}.`
+      ? ` Check these: ${placeholders.filter((item): item is string => typeof item === 'string').join(', ')}.`
       : '';
 
-  return [
-    error.message,
-    'Some values may still be present in the output, so the download was blocked.',
-    placeholderNote.trim(),
-    ...summaryLines,
-  ]
-    .filter((part) => part.length > 0)
-    .join(' ');
+  return `The clean file failed a safety check, so download was blocked.${placeholderNote}`;
 }
 
 function triggerBrowserDownload(blob: Blob, fileName: string): void {

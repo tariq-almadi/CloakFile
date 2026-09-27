@@ -1,67 +1,95 @@
 import type { JSX } from 'react';
 
-import {
-  PII_TYPES,
-  PII_TYPE_LABELS,
-  type DetectorCoverageDto,
-  type PIIType,
-} from '@cloakfile/shared';
+import type { DetectorCoverageDto, PIIType } from '@cloakfile/shared';
+
+import { CATEGORY_COPY } from '../category-copy.js';
 
 interface CategorySelectorProps {
   readonly enabledTypes: readonly PIIType[];
   readonly coverage: readonly DetectorCoverageDto[];
   readonly onToggle: (piiType: PIIType) => void;
+  readonly locked?: boolean;
 }
 
 /**
- * Step 2: choose what to sanitize.
+ * Step 2: choose what to remove.
  *
- * Each category is annotated with the maturity the server reports. A category
- * whose detector is a stub is shown as unavailable rather than hidden: the user
- * should be able to see that we know about addresses and have not built them
- * yet, instead of wondering why addresses came back untouched.
+ * Only categories with a working detector are listed. Checked = remove from the
+ * clean file. Unchecked = leave that kind of info alone.
  */
 export function CategorySelector({
   enabledTypes,
   coverage,
   onToggle,
+  locked = false,
 }: CategorySelectorProps): JSX.Element {
-  const byType = new Map(coverage.map((entry) => [entry.type, entry]));
+  const supported = coverage.filter((entry) => entry.maturity !== 'stub');
+  const hasExperimental = supported.some((entry) => entry.maturity === 'experimental');
 
   return (
-    <section className="rounded border border-slate-300 p-4">
-      <h2 className="font-semibold">2. Select information to sanitize</h2>
+    <section
+      className={`cf-panel relative p-5 sm:p-6 transition duration-300 ${
+        locked ? 'cf-panel-locked' : ''
+      }`}
+      aria-disabled={locked || undefined}
+    >
+      <h2 className="font-display text-lg font-semibold text-snow">
+        <span className="mr-2 text-accent">2.</span>
+        What should we remove?
+      </h2>
+      <p className="mt-1 text-sm text-mist-dim">
+        {locked
+          ? 'Upload a document first — then pick what to hide.'
+          : 'Check each category you want hidden in the clean file. Leave unchecked what should stay.'}
+      </p>
 
-      <ul className="mt-2 space-y-1">
-        {PII_TYPES.map((type) => {
-          const entry = byType.get(type);
-          const unavailable = entry === undefined || entry.maturity === 'stub';
+      {!locked && supported.length === 0 && (
+        <p className="mt-4 text-sm text-mist">Loading available options…</p>
+      )}
 
+      <ul className="mt-4 grid gap-2 sm:grid-cols-2">
+        {supported.map((entry) => {
+          const copy = CATEGORY_COPY[entry.type];
+          const checked = enabledTypes.includes(entry.type);
+          const id = `category-${entry.type}`;
           return (
-            <li key={type}>
-              <label className="flex items-center gap-2 text-sm">
+            <li key={entry.type}>
+              <label
+                htmlFor={id}
+                className={`flex w-full cursor-pointer items-start gap-3 rounded-2xl border px-4 py-3.5 text-left transition duration-200 ${
+                  checked
+                    ? 'border-accent/45 bg-[rgb(183_168_245/0.12)] shadow-[0_0_28px_rgb(183_168_245/0.1)]'
+                    : 'border-line bg-black/25 hover:border-accent/30 hover:bg-[rgb(183_168_245/0.06)]'
+                } ${locked ? 'pointer-events-none' : ''}`}
+              >
                 <input
+                  id={id}
                   type="checkbox"
-                  checked={enabledTypes.includes(type)}
-                  disabled={unavailable}
+                  className="cf-check mt-0.5"
+                  checked={checked}
+                  disabled={locked}
                   onChange={() => {
-                    onToggle(type);
+                    onToggle(entry.type);
                   }}
                 />
-                <span className={unavailable ? 'text-slate-400' : undefined}>
-                  {PII_TYPE_LABELS[type]}
+                <span className="min-w-0 flex-1">
+                  <span className="block font-semibold text-snow">{copy.title}</span>
+                  <span className="mt-1 block text-xs leading-relaxed text-mist-dim">
+                    {copy.example}
+                  </span>
                 </span>
-                {unavailable && (
-                  <span className="text-xs text-slate-400">(not implemented yet)</span>
-                )}
-                {entry?.maturity === 'experimental' && (
-                  <span className="text-xs text-amber-600">(experimental)</span>
-                )}
               </label>
             </li>
           );
         })}
       </ul>
+
+      {!locked && hasExperimental && (
+        <p className="mt-3 text-[0.7rem] leading-relaxed text-mist-dim">
+          Some categories can miss matches — review the findings list before you create the clean
+          file.
+        </p>
+      )}
     </section>
   );
 }

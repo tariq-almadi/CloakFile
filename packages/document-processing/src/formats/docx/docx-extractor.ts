@@ -1,15 +1,11 @@
-import {
-  NotImplementedError,
-  type ExtractedDocument,
-  type FormatCapabilities,
-} from '@cloakfile/shared';
+import type { ExtractedDocument, FormatCapabilities } from '@cloakfile/shared';
 
-import { assertSafeZip, inspectZip } from '../../security/zip-guard.js';
 import type { DocumentExtractor, ExtractionInput } from '../../types.js';
+import { readDocxPackage } from './docx-package.js';
 
 export const DOCX_CAPABILITIES: FormatCapabilities = {
   trueTextReplacement: true,
-  // Editing the runs in-place preserves styling, unlike the PDF approach.
+  // Text nodes are rewritten in place. Styles, tables and numbering stay.
   preservesLayout: true,
   supportsVerification: true,
   mayContainHiddenText: true,
@@ -18,56 +14,32 @@ export const DOCX_CAPABILITIES: FormatCapabilities = {
 };
 
 /**
- * DOCX text extraction — NOT IMPLEMENTED.
+ * DOCX text extraction.
  *
- * ---------------------------------------------------------------------------
- * Why a stub
- * ---------------------------------------------------------------------------
- * DOCX is a ZIP of XML parts, and sensitive text lives in more of them than a
- * naive `document.xml` read suggests:
+ * Word keeps text in more places than the page: headers, footers, footnotes,
+ * comments, tracked deletions and document properties. Each of those is read
+ * into the flat string so detection and verification can see it.
  *
- *   - word/document.xml       body paragraphs and tables
- *   - word/header*.xml        headers, which routinely carry names
- *   - word/footer*.xml        footers
- *   - word/footnotes.xml      footnotes and endnotes
- *   - word/comments.xml       reviewer comments
- *   - docProps/core.xml       author, last-modified-by
- *   - docProps/app.xml        company, manager
- *   - word/settings.xml       rsid data and, in some documents, author names
- *   - tracked changes         deleted text is retained in `w:del` runs
- *   - word/embeddings/        whole embedded documents
- *
- * A second structural problem: Word splits a single visible word across
- * multiple `w:r` runs whenever formatting or spell-check state changes. "John
- * Doe" may be four runs. So a replacement identified on the flattened text must
- * be mapped back across run boundaries — which is precisely what
- * `DocumentTransformer` exists for.
- *
- * Tracked changes and comments are the highest-risk parts, because they are
- * invisible in normal viewing yet fully extractable.
- *
- * ---------------------------------------------------------------------------
- * Security note
- * ---------------------------------------------------------------------------
- * The container is inspected before anything is parsed: an uploaded DOCX is an
- * untrusted archive and a decompression-bomb vector. The XML parser chosen in
- * Phase 2 must additionally have external entity resolution disabled (XXE) and
- * DTD processing turned off.
+ * The XML is not parsed by a general XML library. Only `w:t`, `w:delText`,
+ * `w:instrText` and a fixed set of metadata elements are read, and only the
+ * five predefined entities are decoded. That is what keeps an external entity
+ * in a crafted DOCX from being fetched.
  */
 export class DocxExtractor implements DocumentExtractor {
   readonly format = 'docx' as const;
   readonly capabilities = DOCX_CAPABILITIES;
-  readonly implemented = false;
+  readonly implemented = true;
 
   extract({ bytes }: ExtractionInput): ExtractedDocument {
-    // Runs today even though extraction does not: rejecting a malicious archive
-    // is useful on its own, and it keeps this guard on the live path so it does
-    // not rot while the rest of the extractor is written.
-    assertSafeZip(inspectZip(bytes));
+    const pack = readDocxPackage(bytes);
 
-    throw new NotImplementedError(
-      'DOCX extraction',
-      'DOCX support is planned for Phase 2. Upload TXT, CSV or JSON for now.',
-    );
+    return {
+      format: 'docx',
+      text: pack.text,
+      segments: pack.segments,
+      capabilities: DOCX_CAPABILITIES,
+      unreadable: pack.unreadable,
+      warnings: pack.warnings,
+    };
   }
 }

@@ -26,6 +26,7 @@ export { PdfExtractor } from './formats/pdf/pdf-extractor.js';
 export { PdfGenerator } from './formats/pdf/pdf-generator.js';
 export { PDF_CAPABILITIES } from './formats/pdf/capabilities.js';
 export { BLOCK_SEPARATOR } from './formats/pdf/text-blocks.js';
+export { normalizeTextForDetection } from './formats/pdf/page-text-assembler.js';
 /**
  * Exported for `@cloakfile/verification`, which needs a reading of a generated
  * PDF that does not share a code path with the one used to produce it.

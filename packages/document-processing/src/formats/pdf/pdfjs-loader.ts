@@ -3,6 +3,8 @@ import { dirname, join } from 'node:path';
 
 import { MalformedDocumentError, SuspiciousDocumentError } from '@cloakfile/shared';
 
+import { assemblePageTextFromPdfJsItems } from './page-text-assembler.js';
+
 /**
  * The only place in this codebase that opens a PDF with pdf.js.
  *
@@ -41,6 +43,11 @@ function packageFile(...segments: readonly string[]): string {
 export interface LoadedPdf {
   readonly pageCount: number;
   getPageText(oneBasedIndex: number): Promise<string>;
+  getPageItems(oneBasedIndex: number): Promise<{
+    readonly width: number;
+    readonly height: number;
+    readonly items: readonly Record<string, unknown>[];
+  }>;
   getAnnotationText(oneBasedIndex: number): Promise<readonly AnnotationText[]>;
   getMetadata(): Promise<PdfMetadata>;
   getAttachmentNames(): Promise<readonly string[]>;
@@ -124,9 +131,24 @@ export async function loadPdf(bytes: Uint8Array): Promise<LoadedPdf> {
       const content = await page.getTextContent();
       // Includes text drawn in render mode 3, so an invisible OCR layer under a
       // scan is picked up here. Verified against a hand-built fixture.
-      return content.items
-        .map((item) => ('str' in item ? item.str + (item.hasEOL ? '\n' : '') : ''))
-        .join('');
+      return assemblePageTextFromPdfJsItems(
+        content.items as readonly Record<string, unknown>[],
+      );
+    },
+
+    async getPageItems(index) {
+      const page = await doc.getPage(index);
+      const content = await page.getTextContent();
+      const view = page.view;
+      const x0 = view[0] ?? 0;
+      const y0 = view[1] ?? 0;
+      const x1 = view[2] ?? 0;
+      const y1 = view[3] ?? 0;
+      return {
+        width: x1 - x0,
+        height: y1 - y0,
+        items: content.items as readonly Record<string, unknown>[],
+      };
     },
 
     async getAnnotationText(index) {

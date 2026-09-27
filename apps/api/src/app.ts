@@ -23,10 +23,9 @@ export async function createApp(config: AppConfig = loadConfig()): Promise<Fasti
     // A hard ceiling below the multipart limit for anything that is not a file
     // upload, so a JSON body cannot be used to exhaust memory.
     bodyLimit: 1024 * 1024,
-    // `trustProxy` stays off: rate limiting keys on the peer address, and
-    // trusting X-Forwarded-For without a known proxy in front lets a client
-    // spoof its identity. Turn this on only together with a real proxy config.
-    trustProxy: false,
+    // Behind Vercel (or any reverse proxy) we must trust X-Forwarded-* so rate
+    // limits and logs see the real client. Keep this off for direct local binds.
+    trustProxy: config.env.API_TRUST_PROXY,
   });
 
   await registerSecurityPlugins(app, config);

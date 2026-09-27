@@ -32,7 +32,9 @@ export async function registerSecurityPlugins(
   });
 
   await app.register(cors, {
-    origin: [...config.corsOrigins],
+    // `true` reflects the request Origin — used on Vercel where preview URLs
+    // change per deployment. Locally we stick to an explicit allow-list.
+    origin: config.env.API_TRUST_PROXY ? true : [...config.corsOrigins],
     methods: ['GET', 'POST', 'DELETE'],
     // No cookies are used, which is what keeps this API free of CSRF exposure:
     // a cross-site request cannot carry ambient credentials, so there is nothing

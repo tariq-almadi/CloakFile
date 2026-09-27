@@ -82,14 +82,14 @@ describe('pdf extraction reaches every channel that carries text', () => {
 
     expect(warnings).toContain('embedded file');
     expect(warnings).toContain('XMP metadata');
-    expect(warnings).toContain('document properties');
+    expect(warnings).toContain('file info');
   });
 
-  it('names metadata keys but never their values', async () => {
+  it('mentions cleared file info without quoting metadata values', async () => {
     const analysis = await analyze(hostilePdf());
     const warnings = analysis.warnings.join(' ');
 
-    expect(warnings).toContain('Author');
+    expect(warnings).toContain('file info');
     expect(warnings).not.toContain('John Doe');
     expect(warnings).not.toContain('Acme Scanner Ltd');
   });

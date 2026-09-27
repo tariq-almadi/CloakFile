@@ -2,6 +2,8 @@ import type { JSX } from 'react';
 
 import { FORMAT_EXTENSIONS } from '@cloakfile/shared';
 
+import { BrandMark } from '../components/BrandMark.js';
+import { StepProgress, type FlowStep } from '../components/StepProgress.js';
 import { CategorySelector } from '../features/sanitizer/components/CategorySelector.js';
 import { DetectionList } from '../features/sanitizer/components/DetectionList.js';
 import { UploadPanel } from '../features/sanitizer/components/UploadPanel.js';
@@ -26,101 +28,136 @@ export function SanitizerPage(): JSX.Element {
     .filter((format) => format.extract && format.generate)
     .map((format) => FORMAT_EXTENSIONS[format.format]);
 
+  const hasFile = state.file !== null;
+  const hasAnalysis = state.analysis !== null;
+  const hasResult = state.result !== null;
+  const flowStep = currentFlowStep(hasFile, hasAnalysis, hasResult);
+
   return (
-    <main className="mx-auto max-w-3xl space-y-4 p-6">
-      <header>
-        <h1 className="text-xl font-bold">CloakFile</h1>
-        <p className="text-sm text-slate-600">
-          Replace sensitive information with placeholders, so a document can be shared safely.
-        </p>
-      </header>
+    <div className="cf-shell">
+      <main className="mx-auto flex w-full max-w-3xl flex-col gap-5 px-4 py-8 sm:gap-6 sm:px-6 sm:py-12">
+        <header className="cf-panel overflow-hidden p-5 sm:p-8">
+          <BrandMark size="lg" />
+          <div className="mt-6 border-t border-line pt-5">
+            <StepProgress current={flowStep} />
+          </div>
+        </header>
 
-      {state.error !== null && (
-        <p
-          role="alert"
-          className="rounded border border-red-300 bg-red-50 p-3 text-sm text-red-800"
-        >
-          {state.error}
-        </p>
-      )}
-
-      <UploadPanel
-        file={state.file}
-        acceptedExtensions={acceptedExtensions}
-        onSelect={workflow.selectFile}
-      />
-
-      <CategorySelector
-        enabledTypes={state.enabledTypes}
-        coverage={capabilities?.detection ?? []}
-        onToggle={workflow.toggleCategory}
-      />
-
-      <button
-        type="button"
-        className="rounded bg-slate-900 px-3 py-1.5 text-sm text-white disabled:opacity-40"
-        disabled={!canAnalyze(state)}
-        onClick={() => {
-          void workflow.analyze();
-        }}
-      >
-        {state.step === 'analyzing' ? 'Analyzing...' : 'Analyze document'}
-      </button>
-
-      {state.analysis !== null && (
-        <>
-          {state.analysis.warnings.length > 0 && (
-            <ul className="rounded border border-amber-300 bg-amber-50 p-3 text-sm text-amber-800">
-              {state.analysis.warnings.map((warning) => (
-                <li key={warning}>{warning}</li>
-              ))}
-            </ul>
-          )}
-
-          <DetectionList
-            groups={state.analysis.groups}
-            excludedPlaceholders={state.excludedPlaceholders}
-            onToggle={workflow.togglePlaceholder}
-          />
-
-          {state.error !== null && state.step === 'review' && (
-            <p
-              role="alert"
-              className="rounded border border-red-300 bg-red-50 p-3 text-sm text-red-800"
-            >
-              {state.error}
-            </p>
-          )}
-
-          {analysisWarningsBlockRelease(state.analysis.warnings) && (
-            <p className="rounded border border-slate-300 bg-slate-50 p-3 text-sm text-slate-700">
-              This document has pages CloakFile cannot read as text (often scanned images). A
-              sanitized file cannot be verified, so download will stay disabled. Try a text-based PDF
-              or a .txt file to test the full flow.
-            </p>
-          )}
-
-          <button
-            type="button"
-            className="rounded bg-slate-900 px-3 py-1.5 text-sm text-white disabled:opacity-40"
-            disabled={!canSanitize(state) || state.step === 'sanitizing'}
-            onClick={() => {
-              void workflow.sanitize();
-            }}
+        {state.error !== null && (
+          <p
+            role="alert"
+            className="rounded-2xl border border-[rgb(240_113_120/0.4)] bg-danger-soft px-4 py-3.5 text-sm leading-relaxed text-danger"
           >
-            {state.step === 'sanitizing' ? 'Generating…' : 'Generate sanitized document'}
-          </button>
-        </>
-      )}
+            {state.error}
+          </p>
+        )}
 
-      {state.result !== null && (
-        <VerificationSummary
-          result={state.result}
-          onDownload={() => {
-            void workflow.download();
-          }}
+        <UploadPanel
+          file={state.file}
+          acceptedExtensions={acceptedExtensions}
+          onSelect={workflow.selectFile}
         />
-      )}
-    </main>
+
+        <CategorySelector
+          enabledTypes={state.enabledTypes}
+          coverage={capabilities?.detection ?? []}
+          onToggle={workflow.toggleCategory}
+          locked={!hasFile}
+        />
+
+        {hasFile && (
+          <div className="flex flex-wrap items-center gap-3">
+            <button
+              type="button"
+              className="cf-btn cf-btn-primary"
+              disabled={!canAnalyze(state)}
+              onClick={() => {
+                void workflow.analyze();
+              }}
+            >
+              {state.step === 'analyzing' ? 'Searching…' : 'Find sensitive info'}
+            </button>
+            {state.step === 'select' && state.enabledTypes.length === 0 && (
+              <p className="text-sm text-mist-dim">Turn on at least one category above.</p>
+            )}
+          </div>
+        )}
+
+        {(() => {
+          const analysis = state.analysis;
+          if (analysis === null) return null;
+          return (
+            <>
+              {analysis.warnings.length > 0 && (
+                <ul className="rounded-2xl border border-[rgb(230_192_123/0.35)] bg-warn-soft px-4 py-3.5 text-sm leading-relaxed text-warn">
+                  {analysis.warnings.map((warning) => (
+                    <li key={warning} className="py-0.5">
+                      {plainWarning(warning)}
+                    </li>
+                  ))}
+                </ul>
+              )}
+
+              <DetectionList
+                groups={analysis.groups}
+                excludedPlaceholders={state.excludedPlaceholders}
+                onToggle={workflow.togglePlaceholder}
+              />
+
+              {analysisWarningsBlockRelease(analysis.warnings) && (
+                <p className="rounded-2xl border border-line bg-black/25 px-4 py-3.5 text-sm leading-relaxed text-mist">
+                  Some pages look like scanned images, so we cannot safely clean this file. Try a
+                  normal PDF with selectable text, or a Word / text file.
+                </p>
+              )}
+
+              <div className="flex flex-wrap gap-3">
+                <button
+                  type="button"
+                  className="cf-btn cf-btn-primary"
+                  disabled={!canSanitize(state) || state.step === 'sanitizing'}
+                  onClick={() => {
+                    void workflow.sanitize();
+                  }}
+                >
+                  {state.step === 'sanitizing' ? 'Creating clean file…' : 'Create clean file'}
+                </button>
+              </div>
+            </>
+          );
+        })()}
+
+        {state.result !== null && (
+          <VerificationSummary
+            result={state.result}
+            onDownload={() => {
+              void workflow.download();
+            }}
+          />
+        )}
+
+        <footer className="pb-6 pt-2 text-center text-xs leading-relaxed text-mist-dim">
+          Your document stays on our server, in memory only — never sent to an external AI — and is
+          deleted after you download the clean version.
+        </footer>
+      </main>
+    </div>
   );
+}
+
+function currentFlowStep(hasFile: boolean, hasAnalysis: boolean, hasResult: boolean): FlowStep {
+  if (hasResult) return 4;
+  if (hasAnalysis) return 3;
+  if (hasFile) return 2;
+  return 1;
+}
+
+function plainWarning(warning: string): string {
+  if (warning.includes('cannot be verified as sanitized')) {
+    return 'Some pages could not be read as text (often scans). A clean download will not be possible for this file.';
+  }
+  if (warning.includes('no detector is implemented')) {
+    return 'One of the categories you picked is not available yet.';
+  }
+  return warning;
 }

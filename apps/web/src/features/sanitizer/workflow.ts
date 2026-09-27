@@ -33,15 +33,19 @@ export type WorkflowAction =
 /**
  * Categories ticked on first load.
  *
- * The four that are on by default are the ones with deterministic, validated
- * detectors behind them. Categories whose detectors are stubs start unticked so
- * the default experience does not imply coverage that does not exist.
+ * Stubs stay unticked. Address and organization detection are on because the
+ * redaction benchmark documents mix them with the checksum-backed categories,
+ * and both are reviewed before download.
  */
 export const DEFAULT_ENABLED_TYPES: readonly PIIType[] = [
   'PERSON',
+  'ORGANIZATION',
   'PHONE',
   'EMAIL',
   'CREDIT_CARD',
+  'SSN',
+  'BANK_ACCOUNT',
+  'ADDRESS',
 ];
 
 export const initialWorkflowState: WorkflowState = {

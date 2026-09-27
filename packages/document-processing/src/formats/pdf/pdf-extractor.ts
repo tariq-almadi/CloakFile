@@ -13,6 +13,9 @@ import { assertPlausiblePdf, withTimeout } from './pdf-guard.js';
 import { inspectPdfStructure, type PdfStructure } from './pdf-structure.js';
 import { loadPdf, type LoadedPdf } from './pdfjs-loader.js';
 import { flattenBlocks, type TextBlock } from './text-blocks.js';
+import { assemblePositionedPage } from './page-text-assembler.js';
+import { rememberPdfPlan, type PdfPlacedRun } from './pdf-layout-store.js';
+import { readPdfPaint, type PdfTextAnchor } from './pdf-vector-paint.js';
 
 /**
  * PDF text extraction.
@@ -61,8 +64,16 @@ export class PdfExtractor implements DocumentExtractor {
 
     const doc = await withTimeout(loadPdf(bytes), PDF_EXTRACTION_TIMEOUT_MS, 'Opening this PDF');
     try {
+      let paint: Awaited<ReturnType<typeof readPdfPaint>> = [];
+      try {
+        paint = await readPdfPaint(bytes);
+      } catch {
+        // Positioning is an enhancement. A file pdf.js can read but pdf-lib
+        // cannot still extracts text and falls back to the flowing layout.
+        paint = [];
+      }
       return await withTimeout(
-        readDocument(doc, structure),
+        readDocument(doc, structure, paint),
         PDF_EXTRACTION_TIMEOUT_MS,
         'Reading text from this PDF',
       );
@@ -72,7 +83,11 @@ export class PdfExtractor implements DocumentExtractor {
   }
 }
 
-async function readDocument(doc: LoadedPdf, structure: PdfStructure): Promise<ExtractedDocument> {
+async function readDocument(
+  doc: LoadedPdf,
+  structure: PdfStructure,
+  paint: Awaited<ReturnType<typeof readPdfPaint>>,
+): Promise<ExtractedDocument> {
   if (doc.pageCount > PDF_MAX_PAGES) {
     throw new SuspiciousDocumentError(
       `This PDF declares ${String(doc.pageCount)} pages, above the ${String(PDF_MAX_PAGES)}-page processing limit.`,
@@ -84,17 +99,32 @@ async function readDocument(doc: LoadedPdf, structure: PdfStructure): Promise<Ex
 
   const blocks: TextBlock[] = [];
   const imageOnlyPages: number[] = [];
+  const pagePlans: Array<{
+    width: number;
+    height: number;
+    shapes: (typeof paint)[number]['shapes'];
+    runs: PdfPlacedRun[];
+  }> = [];
 
   for (let pageNumber = 1; pageNumber <= doc.pageCount; pageNumber += 1) {
-    const pageText = await doc.getPageText(pageNumber);
+    const page = await doc.getPageItems(pageNumber);
+    const painted = paint[pageNumber - 1];
+    const styled = styleTextItems(page.items, painted?.anchors ?? []);
+    const assembled = assemblePositionedPage(styled);
 
     blocks.push({
       locator: `page:${String(pageNumber)}`,
       region: 'body',
-      text: pageText,
+      text: assembled.text,
+    });
+    pagePlans.push({
+      width: page.width,
+      height: page.height,
+      shapes: painted?.shapes ?? [],
+      runs: assembled.runs.map((run) => ({ ...run })),
     });
 
-    if (pageText.trim() === '' && structure.pagesWithImages.has(pageNumber)) {
+    if (assembled.text.trim() === '' && structure.pagesWithImages.has(pageNumber)) {
       imageOnlyPages.push(pageNumber);
     }
 
@@ -131,7 +161,7 @@ async function readDocument(doc: LoadedPdf, structure: PdfStructure): Promise<Ex
     );
   }
 
-  return {
+  const extracted: ExtractedDocument = {
     format: 'pdf',
     text: flattened.text,
     segments: flattened.segments,
@@ -139,6 +169,56 @@ async function readDocument(doc: LoadedPdf, structure: PdfStructure): Promise<Ex
     unreadable: imageOnlyPages.map((page) => `page:${String(page)}`),
     warnings,
   };
+
+  rememberPdfPlan(extracted, {
+    pages: pagePlans.map((page, index) => {
+      const segment = flattened.segments[index];
+      const shift = segment?.start ?? 0;
+      return {
+        width: page.width,
+        height: page.height,
+        shapes: page.shapes,
+        runs: page.runs.map((run) => ({
+          ...run,
+          start: run.start + shift,
+          end: run.end + shift,
+        })),
+      };
+    }),
+  });
+
+  return extracted;
+}
+
+function styleTextItems(
+  items: readonly Record<string, unknown>[],
+  anchors: readonly PdfTextAnchor[],
+): readonly Record<string, unknown>[] {
+  return items.map((item) => {
+    const anchor = nearestAnchor(item, anchors);
+    if (anchor === null) return item;
+    return { ...item, color: anchor.color, bold: anchor.bold, mono: anchor.mono };
+  });
+}
+
+function nearestAnchor(
+  item: Record<string, unknown>,
+  anchors: readonly PdfTextAnchor[],
+): PdfTextAnchor | null {
+  const transform = item['transform'];
+  if (!Array.isArray(transform) || typeof transform[4] !== 'number' || typeof transform[5] !== 'number') {
+    return null;
+  }
+  let best: PdfTextAnchor | null = null;
+  let bestDistance = 3;
+  for (const anchor of anchors) {
+    const distance = Math.hypot(anchor.x - transform[4], anchor.y - transform[5]);
+    if (distance < bestDistance) {
+      best = anchor;
+      bestDistance = distance;
+    }
+  }
+  return best;
 }
 
 function imageOnlyPageLabel(pages: readonly number[]): string {
@@ -167,7 +247,7 @@ async function describeRemovedChannels(doc: LoadedPdf): Promise<readonly string[
 
   const metadataChannels: string[] = [];
   if (metadata.infoKeys.length > 0) {
-    metadataChannels.push(`document properties (${metadata.infoKeys.join(', ')})`);
+    metadataChannels.push('title, author, dates, and similar file info');
   }
   if (metadata.hasXmp) metadataChannels.push('XMP metadata');
 
@@ -188,7 +268,7 @@ async function describeRemovedChannels(doc: LoadedPdf): Promise<readonly string[
   }
 
   if (metadataChannels.length > 0) {
-    warnings.push(`Removed from the output: ${metadataChannels.join(', ')}.`);
+    warnings.push(`Cleared ${metadataChannels.join(' and ')} from the file.`);
   }
 
   return warnings;

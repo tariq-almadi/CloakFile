@@ -3,6 +3,8 @@ import type { RawDetection } from '@cloakfile/shared';
 import type { DetectionInput, Detector } from '../types.js';
 
 const SSN_PATTERN = /(?<![\d-])(\d{3})-(\d{2})-(\d{4})(?![\d-])/gu;
+/** A masked SSN still identifies the holder through the visible serial. */
+const MASKED_SSN_PATTERN = /\*{3}-\*{2}-\d{4}(?![\d-])/gu;
 /** Unseparated nine-digit runs are only treated as an SSN with nearby context. */
 const COMPACT_SSN_PATTERN = /(?<![\d-])(\d{3})(\d{2})(\d{4})(?![\d-])/gu;
 const CONTEXT_PATTERN = /\b(?:ssn|social\s+security(?:\s+number)?|s\.s\.n\.)\b/iu;
@@ -37,6 +39,17 @@ export class SsnDetector implements Detector {
         end: match.index + match[0].length,
         value: match[0],
         confidence: 0.9,
+        detector: this.name,
+      });
+    }
+
+    for (const match of text.matchAll(MASKED_SSN_PATTERN)) {
+      detections.push({
+        type: 'SSN',
+        start: match.index,
+        end: match.index + match[0].length,
+        value: match[0],
+        confidence: 0.85,
         detector: this.name,
       });
     }

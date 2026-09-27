@@ -107,12 +107,12 @@ describe('Anonymizer', () => {
     expect(applyAnonymization(text, assigned).text).toBe('Contact [PERSON_001] today');
   });
 
-  it('summarises groups without leaking the original value', () => {
+  it('summarises groups with the found value for review', () => {
     const assigned = new Anonymizer().assign([
       detection('a', 'CREDIT_CARD', 0, '4111111111111111'),
     ]);
     const { groups } = applyAnonymization('4111111111111111', assigned);
 
-    expect(JSON.stringify(groups)).not.toContain('4111111111111111');
+    expect(groups[0]?.preview).toBe('4111111111111111');
   });
 });

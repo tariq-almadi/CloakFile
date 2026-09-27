@@ -51,7 +51,7 @@ export const placeholderGroupSchema = z.object({
   groupId: z.string(),
   type: piiTypeSchema,
   placeholder: z.string(),
-  /** Produced by `buildPreview`. Never the original value. */
+  /** Found text shown in the review UI so the user can decide keep vs remove. */
   preview: z.string(),
   occurrences: z.number().int().positive(),
   confidence: z.number().min(0).max(1),

@@ -2,6 +2,7 @@ import { Anonymizer, applyAnonymization, summarizeGroups } from '@cloakfile/anon
 import { DetectionEngine, createDefaultRegistry } from '@cloakfile/detection';
 import {
   createDefaultDocumentRegistry,
+  normalizeTextForDetection,
   type DocumentProcessorRegistry,
 } from '@cloakfile/document-processing';
 import { VerificationFailedError } from '@cloakfile/shared';
@@ -52,8 +53,11 @@ export class SanitizationPipeline {
     const engine = new DetectionEngine(
       createDefaultRegistry({ customPatterns: options.customPatterns }),
     );
+    const detectionText =
+      extracted.format === 'pdf' ? normalizeTextForDetection(extracted.text) : extracted.text;
+
     const detection = await engine.run({
-      text: extracted.text,
+      text: detectionText,
       enabledTypes: options.enabledTypes,
       ...(options.defaultRegion === undefined ? {} : { defaultRegion: options.defaultRegion }),
     });
@@ -67,7 +71,7 @@ export class SanitizationPipeline {
       document: extracted,
       detections: assigned,
       groups: summarizeGroups(assigned),
-      warnings: [...extracted.warnings, ...detection.warnings],
+      warnings: uniqueWarnings([...extracted.warnings, ...detection.warnings]),
       detectorsRun: detection.detectorsRun,
     };
   }
@@ -98,6 +102,11 @@ export class SanitizationPipeline {
       source: document,
       sanitizedText: anonymization.text,
       originalBytes,
+      replacements: anonymization.applied.map((detection) => ({
+        start: detection.start,
+        end: detection.end,
+        placeholder: detection.placeholder,
+      })),
     });
 
     const verifier: SanitizationVerifier = new DefaultSanitizationVerifier(
@@ -146,4 +155,8 @@ export class SanitizationPipeline {
  */
 function buildVerificationRegistry(): DocumentProcessorRegistry {
   return createDefaultDocumentRegistry();
+}
+
+function uniqueWarnings(warnings: readonly string[]): string[] {
+  return [...new Set(warnings)];
 }

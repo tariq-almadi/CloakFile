@@ -30,7 +30,7 @@ export class PhoneDetector implements Detector {
     const matches =
       region === undefined ? findPhoneNumbersInText(text) : findPhoneNumbersInText(text, region);
 
-    return matches.map((match) => ({
+    const detections: RawDetection[] = matches.map((match) => ({
       type: 'PHONE' as const,
       start: match.startsAt,
       end: match.endsAt,
@@ -41,8 +41,36 @@ export class PhoneDetector implements Detector {
       detector: this.name,
       metadata: { region: match.number.country ?? 'unknown' },
     }));
+
+    // 555 exchanges and vanity toll-free numbers are real redaction targets and
+    // are rejected by libphonenumber. The shape is strict: 3-3-4 or 1-800-xxx-WORD.
+    for (const pattern of [FORMATTED_NANP, VANITY_TOLLFREE]) {
+      for (const match of text.matchAll(pattern)) {
+        const value = match[0];
+        const start = match.index;
+        if (start === undefined) continue;
+        if (detections.some((found) => found.start < start + value.length && start < found.end)) {
+          continue;
+        }
+        detections.push({
+          type: 'PHONE',
+          start,
+          end: start + value.length,
+          value,
+          confidence: 0.8,
+          detector: this.name,
+        });
+      }
+    }
+
+    return detections;
   }
 }
+
+const FORMATTED_NANP =
+  /(?<![\d(])(?:\+?1[\s.-]*)?(?:\(\d{3}\)[\s.-]*|\d{3}[\s.-]+)\d{3}[\s.-]+\d{4}(?!\d)/gu;
+
+const VANITY_TOLLFREE = /\b1[\s.-]?8\d{2}[\s.-]\d{3}[\s.-][A-Z]{4}\b/gu;
 
 function isCountryCode(value: string | undefined): value is CountryCode {
   return value !== undefined && /^[A-Z]{2}$/u.test(value);

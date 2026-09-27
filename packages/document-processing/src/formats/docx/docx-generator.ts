@@ -1,33 +1,43 @@
 import {
-  NotImplementedError,
+  FORMAT_MEDIA_TYPES,
+  MalformedDocumentError,
   type GeneratedDocument,
   type SanitizationMode,
 } from '@cloakfile/shared';
 
 import type { DocumentGenerator, GenerationInput } from '../../types.js';
+import { readDocxPackage, writeSanitizedDocx } from './docx-package.js';
 
 /**
- * DOCX reconstruction — NOT IMPLEMENTED.
+ * Rewrites the text nodes of the original DOCX and packs a new ZIP.
  *
- * The intended approach rewrites the text nodes of each relevant XML part and
- * rebuilds the ZIP, rather than producing a new document from scratch: that
- * preserves styling, tables and numbering, which users expect from a Word file.
+ * Nothing is drawn on top of the old text. The characters inside each run are
+ * replaced, and a run that only held the tail of a replaced name is cleared.
+ * Styles, table geometry and numbering are the original parts, copied through.
  *
- * Non-obvious requirement: parts that are not rewritten must still be cleaned.
- * `docProps/core.xml` (author, last-modified-by) and any `w:del` tracked-change
- * runs must be removed outright — `content-removal`, not replacement — because
- * there is nothing in them worth preserving and everything in them worth
- * leaking.
+ * Embedded OLE parts are dropped rather than sanitized: they can be any format.
+ * Author attributes are cleared because they are not part of the text layer
+ * verification re-reads.
  */
 export class DocxGenerator implements DocumentGenerator {
   readonly format = 'docx' as const;
   readonly mode: SanitizationMode = 'text-replacement';
-  readonly implemented = false;
+  readonly implemented = true;
 
-  generate(_input: GenerationInput): GeneratedDocument {
-    throw new NotImplementedError(
-      'DOCX generation',
-      'Rebuilding a DOCX from sanitized text is planned for Phase 2.',
-    );
+  generate({ source, originalBytes, replacements = [] }: GenerationInput): GeneratedDocument {
+    const pack = readDocxPackage(originalBytes);
+    if (pack.text !== source.text) {
+      throw new MalformedDocumentError(
+        'This Word document could not be rewritten without losing track of where the text sits.',
+      );
+    }
+
+    return {
+      format: 'docx',
+      bytes: writeSanitizedDocx(pack, replacements),
+      mediaType: FORMAT_MEDIA_TYPES.docx,
+      mode: this.mode,
+      warnings: pack.warnings.filter((warning) => warning.includes('Embedded')),
+    };
   }
 }

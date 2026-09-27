@@ -26,6 +26,13 @@ describe('CreditCardDetector', () => {
     expect(detect(`Payment ${value} received`)).toHaveLength(1);
   });
 
+  it('flags a grouped issuer number even when the checksum fails', () => {
+    const text = 'PAN 4111 2222 3333 4444 and 3782-510098-10025';
+    const values = detect(text).map((detection) => detection.value);
+    expect(values).toContain('4111 2222 3333 4444');
+    expect(values).toContain('3782-510098-10025');
+  });
+
   it('does not flag an arbitrary long number that fails Luhn', () => {
     // An order number, not a card.
     expect(detect('Order 1234567890123456 shipped')).toHaveLength(0);
